@@ -87,7 +87,7 @@ const Home: NextPage = () => {
       var metaplex = Metaplex.make(connection);
       metaplex.use(walletAdapterIdentity(wallet)).use(
         bundlrStorage({
-          address: "http://node2.bundlr.network",
+          address: "https://node2.bundlr.network/",
           providerUrl: "https://ssc-dao.genesysgo.net/",
           timeout: 60000,
         })
