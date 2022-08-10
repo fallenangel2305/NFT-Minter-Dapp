@@ -1,0 +1,14 @@
+{
+    "auction_pubkey": "5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax",
+    "listed_nfts": [
+        {
+            "receipt": "BjH7X6LT1NcMn2anY1tNWUuZVptr3WDZY4HtyXMmKfwY",
+            "book_keeper_address": "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd",
+            "price": "10000000",
+            "seller_address": "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd",
+            "trade_state_address": "CSeqHLwHsjkrZZREgft42ZCigMyRrxiY2NU1fsXJTUM7",
+            "mint_address": "mxLr9ioqnqZgDTPDMPe4FfdPV68UyyPyBKg8dPp6dxT"
+        }
+    ],
+    "bidded_nfts": []
+}
