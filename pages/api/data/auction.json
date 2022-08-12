@@ -8,6 +8,30 @@
             "seller_address": "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd",
             "trade_state_address": "CSeqHLwHsjkrZZREgft42ZCigMyRrxiY2NU1fsXJTUM7",
             "mint_address": "mxLr9ioqnqZgDTPDMPe4FfdPV68UyyPyBKg8dPp6dxT"
+        },
+        {
+            "receipt": "EWi3PDiXcpjtStejqqy6VRDb3CcJP4JCFLTo1V1dTm6B",
+            "book_keeper_address": "BBEs9E9MF43f4kmTjSEdfYGc3xLJJnRRzr7rcEj3AD2n",
+            "price": "155800000",
+            "seller_address": "BBEs9E9MF43f4kmTjSEdfYGc3xLJJnRRzr7rcEj3AD2n",
+            "trade_state_address": "371jBYHw7hsHki2HDutbCn7yDVjR3QxHgUSe9MeGK1t1",
+            "mint_address": "FUDeXXnu5xFqPFDxjuBHLGM9RNrFD6Z9VYkvqZdnwaRp"
+        },
+        {
+            "receipt": "EhZxRji5v4CM7brbuK8vwqRvYmx84AxLFgFPQR1Pigs7",
+            "book_keeper_address": "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd",
+            "price": "12300000",
+            "seller_address": "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd",
+            "trade_state_address": "CzxLrZfhaFDQE6ScpfLtfBZ6EBcnYgD7V6jeTVJSyN3h",
+            "mint_address": "DCQS7HQnwyUV4uBAncA9iAPcfWngEiAsDaqS1c7EmJAw"
+        },
+        {
+            "receipt": "E3DtHrVQcVd8Lz1gxYC8ZZ8FGSq9Bof2FfYvBSZCqgh9",
+            "book_keeper_address": "BBEs9E9MF43f4kmTjSEdfYGc3xLJJnRRzr7rcEj3AD2n",
+            "price": "100000000",
+            "seller_address": "BBEs9E9MF43f4kmTjSEdfYGc3xLJJnRRzr7rcEj3AD2n",
+            "trade_state_address": "bRKLWmkUykfsBdjZGhfJ4mVf6x1sZqPFoULfsPZbPvx",
+            "mint_address": "mxLr9ioqnqZgDTPDMPe4FfdPV68UyyPyBKg8dPp6dxT"
         }
     ],
     "bidded_nfts": []

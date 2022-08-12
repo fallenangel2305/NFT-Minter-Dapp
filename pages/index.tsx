@@ -483,162 +483,6 @@ const Home: NextPage = () => {
     }
   };
 
-  // @Todo find listing from the blockchain instead from the json
-  //
-  // async function buildAuctionHouseFilter(filterString: string) {
-  //   const LISTING_RECEIPT_SIZE =
-  //     8 + //key
-  //     32 + // trade_state
-  //     32 + // bookkeeper
-  //     32 + // auction_house
-  //     32 + // seller
-  //     32 + // metadata
-  //     1 +
-  //     32 + // purchase_receipt
-  //     8 + // price
-  //     8 + // token_size
-  //     1 + // bump
-  //     1 + // trade_state_bump
-  //     8 + // created_at
-  //     1 +
-  //     8; // canceled_at;
-
-  //   const ListingReceiptPosition = {
-  //     Key: 0,
-  //     TradeState: 8,
-  //     BookKeeper: 8 + 32,
-  //     AuctionHouse: 8 + 32 + 32,
-  //     Seller: 8 + 32 + 32 + 32,
-  //     Metadata: 8 + 32 + 32 + 32 + 32,
-  //   };
-
-  //   const filters: GetProgramAccountsFilter[] = [
-  //     {
-  //       memcmp: {
-  //         offset: ListingReceiptPosition.AuctionHouse,
-  //         bytes: filterString,
-  //       },
-  //     },
-  //     {
-  //       dataSize: LISTING_RECEIPT_SIZE,
-  //     },
-  //   ];
-  //   try {
-  //     const accounts = await metaplex.connection.getParsedProgramAccounts(
-  //       new PublicKey("hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk"),
-  //       { filters: filters }
-  //     );
-  //     // console.log(accounts);
-
-  //     accounts.forEach((account, i) => {
-  //       let auctionListings = Ah.AuctionHouse.deserialize(
-  //         Buffer.from(account.account.data.toString())
-  //       );
-  //       console.log(auctionListings[0].creator.toBase58(), "actn listngs");
-
-  //       // auctionListings.forEach((auctionListing) => {
-  //       //   console.log(auctionListing, "auctn listng");
-  //       // });
-
-  //       // const parsedAccountInfo: any = account.account.data;
-  //       // const data = parsedAccountInfo;
-  //       // console.log(data, "data");
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
-
-  // buildAuctionHouseFilter(AUCTION_PUBKEY);
-
-  const getListing = async () => {
-    try {
-      const NFTs = await metaplex.nfts().findAllByOwner(publicKey).run();
-      const auctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
-        .run();
-      console.log(auctionHouse?.address?.toString(), "auction pubkey");
-
-      const retrieveListing = await metaplex
-        .auctions()
-        .for(auctionHouse)
-        .findListingByAddress(
-          new PublicKey("FgX3hUxFFUqACmmjx533GdTXT12YmmCoMWE5pCjuFNEm")
-        )
-        .run();
-      // gPA call for Auction house
-      // const AUCTION_HOUSE_SIZE =
-      //   8 + // key
-      //   32 + //fee payer
-      //   32 + //treasury
-      //   32 + //treasury_withdrawal_destination
-      //   32 + //fee withdrawal destination
-      //   32 + //treasury mint
-      //   32 + //authority
-      //   32 + // creator
-      //   1 + // bump
-      //   1 + // treasury_bump
-      //   1 + // fee_payer_bump
-      //   2 + // seller fee basis points
-      //   1 + // requires sign off
-      //   1 + // can change sale price
-      //   220; //padding
-
-      // const AuctionHousePosition = {
-      //   Key: 0,
-      //   FeePayer: 8,
-      //   Treasury: 8 + 32,
-      //   TreasuryWithdrawalDestination: 8 + 32 + 32,
-      //   FeeWithdrawalDestination: 8 + 32 + 32 + 32,
-      //   TreasuryMint: 8 + 32 + 32 + 32 + 32,
-      //   Authority: 8 + 32 + 32 + 32 + 32 + 32,
-      //   Creator: 8 + 32 + 32 + 32 + 32 + 32 + 32,
-      // };
-
-      // async function buildAuctionHouseFilter(
-      //   offsetPosition: AuctionHousePosition,
-      //   filterString: string
-      // ) {
-      //   const filters: GetProgramAccountsFilter[] = [
-      //     {
-      //       memcmp: {
-      //         offset: offsetPosition,
-      //         bytes: filterString,
-      //       },
-      //     },
-      //     {
-      //       dataSize: AUCTION_HOUSE_SIZE,
-      //     },
-      //   ];
-      //   const accounts = await metaplex.connection.getParsedProgramAccounts(
-      //     new PublicKey("hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk"),
-      //     { filters: filters }
-      //   );
-      //   accounts.forEach((account, i) => {
-      //     console.log(
-      //       Ah.AuctionHouse.deserialize(
-      //         account.account.data,
-      //         AuctionHousePosition.Creator
-      //       ),
-      //       " auction house account"
-      //     );
-      //     const parsedAccountInfo: any = account.account.data;
-      //     const data = parsedAccountInfo;
-
-      //     console.log(data, "data");
-      //   });
-      // }
-
-      // buildAuctionHouseFilter(
-      //   AuctionHousePosition.Creator,
-      //   "BJ5sBNC7QVRnnUrqqkUuipRAVWPS3HPJapafUyrc3Mxd"
-      // );
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const [nftState, setNftState] = useState("sell");
 
   const bidNft = async (e) => {
@@ -998,70 +842,171 @@ const Home: NextPage = () => {
     }
   }, [connected, network]);
 
-  const lstdNftsMintId = [];
-  const [auctionNfts, setAuctionNfts] = useState([]);
+  // const lstdNftsMintId = [];
+  // const [auctionNfts, setAuctionNfts] = useState([]);
 
+  // useEffect(() => {
+  //   if (connected) {
+  //     (async () => {
+  //       try {
+  //         await fetch("/api/auction_listing")
+  //           .then((resp) => resp.json())
+  //           .then(async (data) => {
+  //             console.log(data, "data");
+  //             data.listed_nfts.forEach(async (data, i) => {
+  //               console.log(data);
+  //               const mintid = new PublicKey(data.mint_address);
+
+  //               var onChainNfts = [];
+  //               try {
+  //                 const auctionHouse = await metaplex
+  //                   .auctions()
+  //                   .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+  //                   .run();
+  //                 console.log(
+  //                   auctionHouse?.address?.toString(),
+  //                   "auction pubkey"
+  //                 );
+
+  //                 const retrieveListing = await metaplex
+  //                   .auctions()
+  //                   .for(auctionHouse)
+  //                   .findListingByAddress(
+  //                     new PublicKey(data.trade_state_address)
+  //                   )
+  //                   .run();
+  //                 // console.log(retrieveListing);
+  //                 const NFTs = await metaplex.nfts().findByMint(mintid).run();
+
+  //                 NFTs.listedPrice =
+  //                   retrieveListing.price.basisPoints.toNumber() /
+  //                   LAMPORTS_PER_SOL;
+  //                 NFTs.listedSymbol = retrieveListing.price.currency.symbol;
+  //                 NFTs.sellerAddress = retrieveListing.sellerAddress.toString();
+
+  //                 console.log(NFTs, "NFTs");
+
+  //                 setAuctionNfts((auctionNfts) => [...auctionNfts, NFTs]);
+  //               } catch (error) {
+  //                 console.log(error);
+  //               }
+
+  //               // if (lstdNftsMintId.length == data.length)
+  //             });
+  //           });
+  //       } catch (error) {
+  //         console.log(error);
+  //       }
+
+  //       // var post;
+
+  //       // // Call the API
+  //     })();
+  //   } else {
+  //     console.log("wallet not connected");
+  //   }
+  // }, [connected, listed_nfts.listed_nfts]);
+
+  // @Todo find listing from the blockchain instead from the json
+  //
+  const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
-    if (connected) {
-      (async () => {
+    setListedNfts([]);
+    buildAuctionHouseFilter(AUCTION_PUBKEY);
+  }, [connected]);
+
+  async function buildAuctionHouseFilter(filterString: string) {
+    const LISTING_RECEIPT_SIZE =
+      8 + //key
+      32 + // trade_state
+      32 + // bookkeeper
+      32 + // auction_house
+      32 + // seller
+      32 + // metadata
+      1 +
+      32 + // purchase_receipt
+      8 + // price
+      8 + // token_size
+      1 + // bump
+      1 + // trade_state_bump
+      8 + // created_at
+      1 +
+      8; // canceled_at;
+
+    const ListingReceiptPosition = {
+      Key: 0,
+      TradeState: 8,
+      BookKeeper: 8 + 32,
+      AuctionHouse: 8 + 32 + 32,
+      Seller: 8 + 32 + 32 + 32,
+      Metadata: 8 + 32 + 32 + 32 + 32,
+    };
+
+    const filters: GetProgramAccountsFilter[] = [
+      {
+        memcmp: {
+          offset: ListingReceiptPosition.AuctionHouse,
+          bytes: filterString,
+        },
+      },
+
+      {
+        dataSize: LISTING_RECEIPT_SIZE,
+      },
+    ];
+    try {
+      const accounts = await metaplex.connection.getParsedProgramAccounts(
+        new PublicKey("hausS13jsjafwWwGqZTUQRmWyvyxn9EQpqMwV1PBBmk"),
+        { filters: filters }
+      );
+
+      console.log(accounts);
+
+      const auctionHouse = await metaplex
+        .auctions()
+        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .run();
+      console.log(auctionHouse?.address?.toString(), "auction pubkey");
+
+      accounts.forEach(async (account, i) => {
         try {
-          await fetch("/api/auction_listing")
-            .then((resp) => resp.json())
-            .then(async (data) => {
-              console.log(data, "data");
-              data.listed_nfts.forEach(async (data, i) => {
-                console.log(data);
-                const mintid = new PublicKey(data.mint_address);
-
-                var onChainNfts = [];
-                try {
-                  const auctionHouse = await metaplex
-                    .auctions()
-                    .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
-                    .run();
-                  console.log(
-                    auctionHouse?.address?.toString(),
-                    "auction pubkey"
-                  );
-
-                  const retrieveListing = await metaplex
-                    .auctions()
-                    .for(auctionHouse)
-                    .findListingByAddress(
-                      new PublicKey(data.trade_state_address)
-                    )
-                    .run();
-                  // console.log(retrieveListing);
-                  const NFTs = await metaplex.nfts().findByMint(mintid).run();
-
-                  NFTs.listedPrice =
-                    retrieveListing.price.basisPoints.toNumber() /
-                    LAMPORTS_PER_SOL;
-                  NFTs.listedSymbol = retrieveListing.price.currency.symbol;
-                  NFTs.sellerAddress = retrieveListing.sellerAddress.toString();
-
-                  console.log(NFTs, "NFTs");
-
-                  setAuctionNfts((auctionNfts) => [...auctionNfts, NFTs]);
-                } catch (error) {
-                  console.log(error);
+          // console.log(account.pubkey.toBase58(), "account.pubkey");
+          Ah.ListingReceipt.fromAccountAddress(
+            metaplex.connection,
+            account.pubkey
+          ).then(async (listings) => {
+            if (listings.tradeState == null) {
+              throw new Error(
+                `Unable to find ListingReceipt account at ${listings}`
+              );
+            } else {
+              // console.log(listings.tradeState);
+              try {
+                const retrieveListing = await metaplex
+                  .auctions()
+                  .for(auctionHouse)
+                  .findListingByAddress(new PublicKey(listings.tradeState))
+                  .run();
+                if (retrieveListing.purchaseReceiptAddress == null) {
+                  console.log(retrieveListing, "retrived listings");
+                  setListedNfts((listedNfts) => [
+                    ...listedNfts,
+                    retrieveListing,
+                  ]);
                 }
-
-                // if (lstdNftsMintId.length == data.length)
-              });
-            });
+              } catch (error) {
+                console.log(error);
+              }
+            }
+          });
         } catch (error) {
           console.log(error);
         }
-
-        // var post;
-
-        // // Call the API
-      })();
-    } else {
-      console.log("wallet not connected");
+      });
+    } catch (error) {
+      console.log(error);
     }
-  }, [connected, listed_nfts.listed_nfts]);
+  }
 
   return (
     <div className={styles.container}>
@@ -1115,29 +1060,35 @@ const Home: NextPage = () => {
                 <div className={styles.card}>
                   <div className="nfts">
                     <>
-                      {auctionNfts &&
-                        auctionNfts.map((n, i) => (
+                      {listedNfts &&
+                        listedNfts.map((n, i) => (
                           <div className={styles.card} key={i}>
                             <>
                               {/* {console.log(allNFTs, "nfts here")} */}
-
+                              <h1>{i}</h1>
                               <img
-                                src={n.json.image}
+                                src={n.asset.json.image}
                                 alt="nft image"
                                 style={{ height: 250, width: 250 }}
                                 // height={250}
                                 // width={250}
                                 key={i + 1}
                               />
-                              <h1 key={i + 2}>{n.name}</h1>
-                              <h3 key={i + 3}>{n.symbol}</h3>
-                              <h3 key={i + 4}>{n.description}</h3>
-                              <h3 key={i + 5}>{n.mint.address.toString()}</h3>
+                              <h1 key={i + 2}>{n.asset.name}</h1>
+                              <h3 key={i + 3}>{n.asset.symbol}</h3>
+                              <h3 key={i + 4}>{n.asset.description}</h3>
+                              <h3 key={i + 5}>
+                                {n.asset.mint.address.toString()}
+                              </h3>
 
                               <h2 key={i + 6}>
-                                {n.listedPrice} {n.listedSymbol}{" "}
+                                {n.price.basisPoints.toNumber() /
+                                  LAMPORTS_PER_SOL}{" "}
+                                {n.currency}
                               </h2>
-                              <h3 key={i + 7}>Seller: {n.sellerAddress}</h3>
+                              <h3 key={i + 7}>
+                                Seller: {n.sellerAddress.toString()}
+                              </h3>
 
                               {/* {console.log(n, "nfts here")} */}
                               {n.sellerAddress ==
@@ -1147,13 +1098,16 @@ const Home: NextPage = () => {
                                     <Input
                                       name="mintAddress"
                                       type={"hidden"}
-                                      value={n.mint.address.toString()}
+                                      value={n.asset.mint.address.toString()}
                                     />
                                     <Input
                                       name="price"
                                       type={"hidden"}
                                       required
-                                      value={n.listedPrice}
+                                      value={
+                                        n.price.basisPoints.toNumber() /
+                                        LAMPORTS_PER_SOL
+                                      }
                                       min={0.001}
                                     />
                                   </label>
