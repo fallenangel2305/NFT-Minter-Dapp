@@ -35,10 +35,12 @@ import {
   Tabs,
   Divider,
   notification,
+  message,
 } from "antd";
 import {
   MinusCircleOutlined,
   PlusOutlined,
+  InboxOutlined,
   RadiusBottomleftOutlined,
   RadiusBottomrightOutlined,
   RadiusUpleftOutlined,
@@ -46,7 +48,7 @@ import {
 } from "@ant-design/icons";
 import { WalletNotConnectedError } from "@solana/wallet-adapter-base";
 import fs from "fs";
-import * as Ah from "@metaplex-foundation/mpl-auction-house";
+import { ListingReceipt } from "@metaplex-foundation/mpl-auction-house";
 import * as core from "@metaplex-foundation/mpl-core";
 import * as beet from "@metaplex-foundation/beet";
 import * as splToken from "@solana/spl-token";
@@ -64,7 +66,13 @@ import {
   WRAPPED_SOL_MINT,
 } from "@metaplex-foundation/js/packages/js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import listed_nfts from "./api/data/auction.json";
+
+import MetaplexConnection from "../components/MetaplexConnection";
+import HolderChecker from "../components/HolderChecker";
+import CandyMachine from "../components/CandyMachine";
+import Dragger from "antd/lib/upload/Dragger";
+import AuctionHouseFilter from "../components/AuctionHouseFilter";
+
 const { TabPane } = Tabs;
 const layout = {
   labelCol: {
@@ -99,8 +107,7 @@ const Home: NextPage = () => {
   const [showNFT, setShowNFT] = useState();
 
   // const MINT_TO_SEARCH = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; //USDC Mint Address
-  const TOKEN_ACCOUNT_TO_SEARCH =
-    "FoXyMu5xwXre7zEoSvzViRk3nGawHUp9kUh97y2NDhcq"; //change to your access token mint address
+
   //auction
 
   const AUCTION_HOUSE_PROGRAM_ID = new PublicKey(
@@ -123,32 +130,9 @@ const Home: NextPage = () => {
   const [fileUrl, updateFileUrl] = useState(``);
   const [network, setNetwork] = useState(`devnet`);
 
-  if (connected && wallet) {
-    // wallet.adapter.connect;
-    if (network == "mainnet") {
-      var connection = new Connection("https://ssc-dao.genesysgo.net/");
-      var metaplex = Metaplex.make(connection);
+  // wallet.adapter.connect;
+  const { connection, metaplex } = MetaplexConnection({ network, wallet });
 
-      metaplex.use(walletAdapterIdentity(wallet)).use(
-        bundlrStorage({
-          address: "http://node1.bundlr.network",
-          providerUrl: "https://ssc-dao.genesysgo.net/",
-          timeout: 60000,
-        })
-      );
-    }
-    if (network == "devnet") {
-      var connection = new Connection("https://devnet.genesysgo.net/");
-      var metaplex = Metaplex.make(connection);
-      metaplex.use(walletAdapterIdentity(wallet)).use(
-        bundlrStorage({
-          address: "https://devnet.bundlr.network",
-          providerUrl: "https://devnet.genesysgo.net/",
-          timeout: 60000,
-        })
-      );
-    }
-  }
   const ipfs = create({
     host: "ipfs.infura.io",
     port: 5001,
@@ -205,12 +189,12 @@ const Home: NextPage = () => {
         ? setUrl(
             // "https://solscan.io/token/" + nft.mint.toString() + "?cluster=devnet"
             "https://explorer.solana.com/address/" +
-              nft.mint.toString() +
+              nft.mint.address.toString() +
               "?cluster=devnet"
           )
         : setUrl(
             // "https://solscan.io/token/" + nft.mint.toString() + "?cluster=devnet"
-            "https://explorer.solana.com/address/" + nft.mint.toString()
+            "https://explorer.solana.com/address/" + nft.mint.address.toString()
           );
       // window.open(
       //   "https://solscan.io/token/" + nft.mint.toString() + "?cluster=devnet",
@@ -230,26 +214,7 @@ const Home: NextPage = () => {
 
     return e?.filelist;
   };
-  async function onChange(e) {
-    let file = e.target.files[0];
-    setUploadFile(file);
-    console.log(file, "file data");
 
-    if (file.size > 2000000) {
-      alert("Image too big max is 2mb");
-    } else {
-      console.log("upload file", file);
-      try {
-        const added = await ipfs.add(file);
-
-        console.log("upload file path", added);
-        const url = `https://ipfs.infura.io/ipfs/${added.path}`;
-        updateFileUrl(url);
-      } catch (error) {
-        console.log("Error uploading file: ", error);
-      }
-    }
-  }
   function onChangeSwitch(checked: any) {
     if (checked) {
       setNetwork("mainnet");
@@ -260,113 +225,95 @@ const Home: NextPage = () => {
     }
   }
 
-  useEffect(() => {
-    if (connected) {
-      try {
-        async function getTokenAccounts(
-          wallet: string,
-          solanaConnection: Connection
-        ) {
-          const filters: GetProgramAccountsFilter[] = [
-            {
-              dataSize: 165, //size of account (bytes)
-            },
-            {
-              memcmp: {
-                offset: 32, //location of our query in the account (bytes)
-                bytes: wallet, //our search criteria, a base58 encoded string
-              },
-            },
-            {
-              memcmp: {
-                offset: 0, //number of bytes
-                bytes: TOKEN_ACCOUNT_TO_SEARCH, //base58 encoded string
-              },
-            },
-          ];
-          const accounts = await solanaConnection.getParsedProgramAccounts(
-            TOKEN_PROGRAM_ID, //new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
-            { filters: filters }
-          );
-          // console.log(
-          //   `Found ${accounts.length} token account(s) for wallet ${wallet}.`
-          // );
-          accounts.forEach((account, i) => {
-            //Parse the account data
-            const parsedAccountInfo: any = account.account.data;
-            const mintAddress: string =
-              parsedAccountInfo["parsed"]["info"]["mint"];
-            const tokenBalance: number =
-              parsedAccountInfo["parsed"]["info"]["tokenAmount"]["uiAmount"];
-            //Log results
-            // console.log(
-            //   `Token Account No. ${i + 1}: ${account.pubkey.toString()}`
-            // );
-            // console.log(`--Token Mint: ${mintAddress}`);
-            // console.log(`--Token Balance: ${tokenBalance}`);
-
-            if (mintAddress == TOKEN_ACCOUNT_TO_SEARCH && tokenBalance > 0) {
-              console.log("token holder");
-              setCheckTokenHolder(true);
-            } else {
-              console.log("not token holder");
-              setCheckTokenHolder(true); // change bool false to gain access to mint without token
-            }
-          });
-        }
-        getTokenAccounts(publicKey.toString(), connection);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }, [connected, connection, publicKey]);
+  // useEffect(() => {
+  //   if (connected) {
+  //     const { mintAddress, tokenBalance } = HolderChecker({
+  //       publicKey,
+  //       connection,
+  //     });
+  //     if (
+  //       mintAddress == process.env.TOKEN_ACCOUNT_TO_SEARCH &&
+  //       tokenBalance > 0
+  //     ) {
+  //       console.log("token holder");
+  //       setCheckTokenHolder(true);
+  //     } else {
+  //       console.log("not token holder");
+  //       setCheckTokenHolder(true); // change bool false to gain access to mint without token
+  //     }
+  //   }
+  // }, [connected, connection, publicKey]);
 
   useEffect(() => {
     setCheckTokenHolder(true);
   }, [disconnecting]);
 
-  const onCreateAuction = async () => {
+  const onCreateAuction = async (values) => {
+    console.log(values.sellerFeeBasisPoints);
     const authority = metaplex.identity();
+    const sellerFeeBasisPoints = values.sellerFeeBasisPoints * 100;
+    const treasuryMint = values.treasuryMint;
+    const feeWithdrawalDestination = values.feeWithdrawalDestination;
+    const treasuryWithdrawalDestinationOwner =
+      values.treasuryWithdrawalDestinationOwner;
+
+    console.log(
+      sellerFeeBasisPoints,
+      treasuryMint,
+      feeWithdrawalDestination,
+      treasuryWithdrawalDestinationOwner
+    );
     try {
       const auctionHouse = await metaplex
         .auctions()
         .createAuctionHouse({
-          sellerFeeBasisPoints: 200,
+          sellerFeeBasisPoints,
           requiresSignOff: false,
-          treasuryMint: WRAPPED_SOL_MINT,
+          treasuryMint: new PublicKey(treasuryMint),
           authority: authority.publicKey,
           canChangeSalePrice: true,
-          feeWithdrawalDestination: publicKey,
-          treasuryWithdrawalDestinationOwner: publicKey,
+          feeWithdrawalDestination: new PublicKey(feeWithdrawalDestination),
+          treasuryWithdrawalDestinationOwner: new PublicKey(
+            treasuryWithdrawalDestinationOwner
+          ),
           payer: authority,
         })
         .run();
-
       console.log(auctionHouse, "Auction house");
     } catch (error) {
       console.log(error);
     }
   };
 
-  const onUpdateAuction = async () => {
+  const onUpdateAuction = async (values) => {
     const authority = metaplex.identity();
-
+    const auctionAddress = values.auctionAddress;
+    const newAuthority = values.newAuthority;
+    const sellerFeeBasisPoints = values.sellerFeeBasisPoints * 100;
+    const feeWithdrawalDestination = values.feeWithdrawalDestination;
+    const treasuryWithdrawalDestinationOwner =
+      values.treasuryWithdrawalDestinationOwner;
+      console.log(auctionAddress,sellerFeeBasisPoints,feeWithdrawalDestination,treasuryWithdrawalDestinationOwner)
     try {
       const retrievedAuctionHouse = await metaplex
         .auctions()
-        .findAuctionHouseByCreatorAndMint(publicKey, WRAPPED_SOL_MINT)
+        .findAuctionHouseByAddress(new PublicKey(auctionAddress))
         .run();
+
+      console.log(retrievedAuctionHouse.address.toString())
 
       const auctionHouse = await metaplex
         .auctions()
         .updateAuctionHouse(retrievedAuctionHouse, {
-          sellerFeeBasisPoints: 200,
-          newAuthority: publicKey,
+          sellerFeeBasisPoints,
+          // newAuthority: new PublicKey(newAuthority), only use when need changing to new address might cause access to auction house
           requiresSignOff: false,
           authority: authority,
           canChangeSalePrice: true,
-          feeWithdrawalDestination: publicKey,
-          treasuryWithdrawalDestinationOwner: publicKey,
+          feeWithdrawalDestination: new PublicKey(feeWithdrawalDestination),
+          treasuryWithdrawalDestinationOwner: new PublicKey(
+            treasuryWithdrawalDestinationOwner
+          ),
           payer: authority,
         })
         .run();
@@ -376,28 +323,28 @@ const Home: NextPage = () => {
       console.log(error);
     }
   };
-
-  const findAuction = async () => {
+  const [auctionAddress, setAuctionAddress] = useState("");
+  const [auctionFee, setAuctionFee] = useState("");
+  const findAuction = async (values) => {
     try {
       const authority = metaplex.identity();
 
       // 5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax
 
+      const publicKey = values.userPublicKey;
+      const treasuryMintAddress = values.treasuryMint;
+      console.log(publicKey, treasuryMintAddress);
       const retrievedAuctionHouse = await metaplex
         .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .findAuctionHouseByCreatorAndMint(
+          new PublicKey(publicKey),
+          new PublicKey(treasuryMintAddress)
+        )
         .run();
-      console.log(
-        retrievedAuctionHouse.feeAccountAddress,
-        "Auction Fee Account"
-      );
 
-      console.log(
-        retrievedAuctionHouse,
-        retrievedAuctionHouse.address.toBase58(),
-        retrievedAuctionHouse.authorityAddress.toBase58(),
-        "auction house"
-      );
+      setAuctionAddress(retrievedAuctionHouse.address.toBase58());
+      setAuctionFee(retrievedAuctionHouse.sellerFeeBasisPoints.toString());
+      console.log(retrievedAuctionHouse, "auction house address");
     } catch (error) {
       console.log(error);
     }
@@ -460,26 +407,6 @@ const Home: NextPage = () => {
       //   "listed nft"
       // );
       console.log("successfully listed your nft");
-      // return (
-      //   <>
-      //     <Button
-      //       type="primary"
-      //       onClick={() => {
-      //         notification.info({
-      //           message: `You have successfully listed your nft`,
-      //           description:
-      //             `Your item id ` +
-      //             listing.asset.address.toBase58() +
-      //             `has been added to auction id` +
-      //             listing.auctionHouse.address,
-      //         });
-      //       }}
-      //     >
-      //       <RadiusUprightOutlined />
-      //       Notification
-      //     </Button>
-      //   </>
-      // );
     } catch (error) {
       console.log(error);
     }
@@ -700,8 +627,8 @@ const Home: NextPage = () => {
       Seller: 8 + 32 + 32 + 32,
       Metadata: 8 + 32 + 32 + 32 + 32,
     };
-
-    const filters: GetProgramAccountsFilter[] = [
+    //@ts-ignore
+    const filters: any = [
       {
         memcmp: {
           offset: ListingReceiptPosition.AuctionHouse,
@@ -730,7 +657,7 @@ const Home: NextPage = () => {
       accounts.forEach(async (account, i) => {
         try {
           // console.log(account.pubkey.toBase58(), "account.pubkey");
-          Ah.ListingReceipt.fromAccountAddress(
+          ListingReceipt.fromAccountAddress(
             metaplex.connection,
             account.pubkey
           ).then(async (listings) => {
@@ -742,9 +669,9 @@ const Home: NextPage = () => {
               // throw new Error(
               //   `Unable to find ListingReceipt account at ${listings}`
               // );
-              console.log(
-                `Unable to find ListingReceipt account at ${listings.tradeState.toBase58()}`
-              );
+              // console.log(
+              //   `Unable to find ListingReceipt account at ${listings.tradeState.toBase58()}`
+              // );
             } else {
               // console.log(listings.tradeState);
               try {
@@ -754,7 +681,7 @@ const Home: NextPage = () => {
                   .findListingByAddress(new PublicKey(listings.tradeState))
                   .run();
                 if (retrieveListing.purchaseReceiptAddress == null) {
-                  console.log(retrieveListing, "retrived listings");
+                  // console.log(retrieveListing, "retrived listings");
                   setListedNfts((listedNfts) => [
                     ...listedNfts,
                     retrieveListing,
@@ -773,6 +700,59 @@ const Home: NextPage = () => {
       console.log(error);
     }
   }
+
+  //Candy Machine
+
+  const createCandyMachine = async (e) => {
+    console.log("im here");
+
+    const tx = CandyMachine({
+      wallet,
+      publicKey,
+      network,
+    }).createAndInsertItemsToCandyMachine({
+      price: e.target.price.value,
+      sellerFeeBasisPoints: e.target.sellerFeeBasisPoints.value * 100,
+      itemsAvailable: e.target.itemsAvailable.value,
+      isMutable: e.target.isMutable.value,
+      creators: e.target.creators.value,
+    });
+    console.log(tx, "candymachine created");
+  };
+
+  const uploadToBundlr = (info) => {
+    info.fileList.forEach((file) => {
+      //paused candymachine for this week
+      // const upload = metaplex.storage().upload({});
+      console.log(file);
+    });
+  };
+
+  const props = {
+    name: "file",
+    multiple: true,
+
+    onChange(info) {
+      uploadToBundlr(info);
+      const { status } = info.file;
+
+      console.log(info, "info");
+
+      if (status !== "uploading") {
+        console.log(info.file, info.fileList);
+      }
+
+      if (status === "done") {
+        message.success(`${info.file.name} file uploaded successfully.`);
+      } else if (status === "error") {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+
+    onDrop(e) {
+      console.log("Dropped files", e.dataTransfer.files);
+    },
+  };
 
   return (
     <div className={styles.container}>
@@ -812,129 +792,284 @@ const Home: NextPage = () => {
             {/* Get started by editing{" "}
         <code className={styles.code}>pages/index.tsx</code> */}
           </p>
-          {/* <button onClick={onCreateAuction}>Create Auction</button>
+          {/* <button onClick={onCreateAuction}>Create Auction</button> */}
 
-          <button onClick={onUpdateAuction}>Update Auction</button>
-          <button onClick={findAuction}>Get Auction</button>
+          {/* <button onClick={onUpdateAuction}>Update Auction</button> */}
+          {/* <button onClick={findAuction}>Get Auction</button>
 
           <button onClick={getListing}>Get Listing</button>
           <button onClick={bidNft}>Bid Nft</button> */}
-
           <Tabs defaultActiveKey="0">
-            <TabPane tab="Auctions" key="0">
+            <TabPane tab="Create Auction House" key="0">
               <div className={styles.grid}>
                 <div className={styles.card}>
                   <div className="nfts">
+                    <label>
+                      <h2>
+                        NB: If you have already created an auction and want to
+                        update auction settings please go to next tab.
+                      </h2>
+                    </label>
                     <>
-                      {listedNfts &&
-                        listedNfts.map((n, i) => (
-                          <div className={styles.card} key={i}>
-                            <>
-                              {/* {console.log(allNFTs, "nfts here")} */}
-                              <h1>{i}</h1>
-                              <img
-                                src={n?.asset?.json?.image}
-                                alt="nft image"
-                                style={{ height: 250, width: 250 }}
-                                // height={250}
-                                // width={250}
-                                key={i + 1}
-                              />
-                              <h1 key={i + 2}>{n?.asset?.name}</h1>
-                              <h3 key={i + 3}>{n?.asset?.symbol}</h3>
-                              <h3 key={i + 4}>{n?.asset?.description}</h3>
-                              <h3 key={i + 5}>
-                                {n.asset.mint.address.toString()}
-                              </h3>
-
-                              <h2 key={i + 6}>
-                                {n?.price?.basisPoints.toNumber() /
-                                  LAMPORTS_PER_SOL}{" "}
-                                {n?.currency}
-                              </h2>
-                              <h3 key={i + 7}>
-                                Seller: {n?.sellerAddress?.toString()}
-                              </h3>
-
-                              {console.log(n, "nfts here")}
-                              {n?.sellerAddress == publicKey.toString() ? (
-                                <form onSubmit={cancelListing}>
-                                  <label>
-                                    <Input
-                                      name="mintAddress"
-                                      type={"hidden"}
-                                      value={n?.asset?.mint?.address.toString()}
-                                    />
-                                    <Input
-                                      name="tradeStateAddress"
-                                      type={"hidden"}
-                                      value={n?.tradeStateAddress.toString()}
-                                    />
-                                    <Input
-                                      name="price"
-                                      type={"hidden"}
-                                      required
-                                      value={
-                                        n?.price?.basisPoints.toNumber() /
-                                        LAMPORTS_PER_SOL
-                                      }
-                                      min={0.001}
-                                    />
-                                  </label>
-
-                                  <input
-                                    name="submit"
-                                    type="submit"
-                                    value="Cancel Listing"
-                                  />
-                                </form>
-                              ) : (
-                                <form onSubmit={buyNft}>
-                                  <label>
-                                    <Input
-                                      name="mintAddress"
-                                      type={"hidden"}
-                                      value={n?.asset?.mint?.address.toString()}
-                                    />
-                                    <Input
-                                      name="tradeStateAddress"
-                                      type={"hidden"}
-                                      value={n?.tradeStateAddress.toString()}
-                                    />
-                                    <Input
-                                      name="price"
-                                      type={"hidden"}
-                                      required
-                                      value={
-                                        n?.price?.basisPoints.toNumber() /
-                                        LAMPORTS_PER_SOL
-                                      }
-                                      min={0.001}
-                                    />
-                                  </label>
-
-                                  <input
-                                    name="submit"
-                                    type="submit"
-                                    value="Buy"
-                                  />
-                                </form>
-                              )}
-                            </>
-                          </div>
-                        ))}
+                      <Form onFinish={onCreateAuction}>
+                        <Form.Item
+                          label="AuctionHouse Fee(%)"
+                          name={["sellerFeeBasisPoints"]}
+                          style={{ marginTop: "10px" }}
+                          initialValue="2"
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          name={["treasuryMint"]}
+                          label="AuctionHouse Currency(mint address of your token)"
+                          initialValue="So11111111111111111111111111111111111111112"
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          label="Address to withdraw fee"
+                          name={["feeWithdrawalDestination"]}
+                          initialValue={publicKey.toBase58()}
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          label="Withdraw fee owner address"
+                          name={["treasuryWithdrawalDestinationOwner"]}
+                          initialValue={publicKey.toBase58()}
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Create Auction House
+                          </Button>
+                        </Form.Item>
+                      </Form>
                     </>
-
-                    {/* <Image src={image} alt="nft image"></Image> */}
                   </div>
                 </div>
               </div>
+            </TabPane>
+            <TabPane tab="Find Auction House" key="1">
+              <div className={styles.grid}>
+                <div className={styles.card}>
+                  <div className="nfts">
+                    <label>
+                      <h2>
+                        NB: If you want to find your auction house.
+                      </h2>
+                    </label>
+                    <>
+                      <Form onFinish={findAuction}>
+                        <Form.Item
+                          label="PublicKey used to create auction"
+                          name={["userPublicKey"]}
+                          style={{ marginTop: "10px" }}
+                          initialValue={publicKey.toBase58()}
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          name={["treasuryMint"]}
+                          label="AuctionHouse Currency(mint address of your token)"
+                          initialValue="So11111111111111111111111111111111111111112"
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Find Auction House
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                      {auctionAddress ? (
+                        <>
+                        <h3>Your auctionhouse address : {auctionAddress}</h3>
+                        <h3>Your auctionhouse Fee : {auctionFee/100}%</h3>
+                        </>
+                      ) : null}
+                    </>
+                  </div>
+                </div>
+              </div>
+            </TabPane>
+            <TabPane tab="Update Auction House" key="2">
+              <div className={styles.grid}>
+                <div className={styles.card}>
+                  <div className="nfts">
+                    <label>
+                      <h2>
+                        NB:  Update your auction settings. Some changes are irreversible.
+                      </h2>
+                    </label>
+                    <>
+                      <Form onFinish={onUpdateAuction}>
+                        <Form.Item
+                          name={["auctionAddress"]}
+                          label="AuctionHouse Address"
+                          
+                        >
+                          <Input  required placeholder="5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax"/>
+                        </Form.Item>
+                        {/* <Form.Item
+                          name={["newAuthority"]}
+                          label="Change Auction House Owner"
+                          
+                        >
+                          <Input required placeholder="5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax" />
+                        </Form.Item> */}
+                        <Form.Item
+                          label="AuctionHouse Fee(%)"
+                          name={["sellerFeeBasisPoints"]}
+                          style={{ marginTop: "10px" }}
+                          initialValue="2"
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          label="Address to withdraw fee"
+                          name={["feeWithdrawalDestination"]}
+                          initialValue={publicKey.toBase58()}
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item
+                          label="Withdraw fee owner address"
+                          name={["treasuryWithdrawalDestinationOwner"]}
+                          initialValue={publicKey.toBase58()}
+                        >
+                          <Input required />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Update Auction House
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  </div>
+                </div>
+              </div>
+            </TabPane>
+          </Tabs>
+
+          <Tabs defaultActiveKey="0">
+            <TabPane tab="Auctions" key="0">
+              {/* <div className={styles.grid}> */}
+              {/* <div className={styles.card}> */}
+              <div
+                className="nfts"
+                style={{
+                  display: "inline-grid",
+                  gridTemplateColumns: "repeat(2,2fr)",
+                  columnGap: "10px",
+                }}
+              >
+                <>
+                  {/* <Auction /> */}
+                  {listedNfts &&
+                    listedNfts.map((n, i) => (
+                      <div className={styles.card} key={i}>
+                        <>
+                          {/* {console.log(allNFTs, "nfts here")} */}
+                          <h3 key={i}>{n.asset.mint.address.toString()}</h3>
+                          <img
+                            src={n?.asset?.json?.image}
+                            alt="nft image"
+                            style={{ height: 250, width: 250 }}
+                            // height={250}
+                            // width={250}
+                            key={i + 1}
+                          />
+                          <h1 key={i + 2}>{n?.asset?.name}</h1>
+                          <h3 key={i + 3}>{n?.asset?.symbol}</h3>
+                          <h3 key={i + 4}>{n?.asset?.description}</h3>
+
+                          <h2 key={i + 5}>
+                            {n?.price?.basisPoints.toNumber() /
+                              LAMPORTS_PER_SOL}{" "}
+                            {n?.currency}
+                          </h2>
+                          <h3 key={i + 6}>
+                            Seller: {n?.sellerAddress?.toString()}
+                          </h3>
+
+                          {/* {console.log(n, "nfts here")} */}
+                          {n?.sellerAddress == publicKey.toString() ? (
+                            <form onSubmit={cancelListing}>
+                              <label>
+                                <Input
+                                  name="mintAddress"
+                                  type={"hidden"}
+                                  value={n?.asset?.mint?.address.toString()}
+                                />
+                                <Input
+                                  name="tradeStateAddress"
+                                  type={"hidden"}
+                                  value={n?.tradeStateAddress.toString()}
+                                />
+                                <Input
+                                  name="price"
+                                  type={"hidden"}
+                                  required
+                                  value={
+                                    n?.price?.basisPoints.toNumber() /
+                                    LAMPORTS_PER_SOL
+                                  }
+                                  min={0.001}
+                                />
+                              </label>
+
+                              <input
+                                name="submit"
+                                type="submit"
+                                value="Cancel Listing"
+                              />
+                            </form>
+                          ) : (
+                            <form onSubmit={buyNft}>
+                              <label>
+                                <Input
+                                  name="mintAddress"
+                                  type={"hidden"}
+                                  value={n?.asset?.mint?.address.toString()}
+                                />
+                                <Input
+                                  name="tradeStateAddress"
+                                  type={"hidden"}
+                                  value={n?.tradeStateAddress.toString()}
+                                />
+                                <Input
+                                  name="price"
+                                  type={"hidden"}
+                                  required
+                                  value={
+                                    n?.price?.basisPoints.toNumber() /
+                                    LAMPORTS_PER_SOL
+                                  }
+                                  min={0.001}
+                                />
+                              </label>
+
+                              <input name="submit" type="submit" value="Buy" />
+                            </form>
+                          )}
+                        </>
+                      </div>
+                    ))}
+                </>
+
+                {/* <Image src={image} alt="nft image"></Image> */}
+              </div>
+              {/* </div> */}
+              {/* </div> */}
             </TabPane>
 
             <TabPane tab="Single Mint" key="1">
               <div className={styles.grid}>
                 <div className={styles.card}>
-                  <div>{fileUrl && <img src={fileUrl} width="500" />}</div>
                   <Form
                     {...layout}
                     name="nest-messages"
@@ -948,7 +1083,7 @@ const Home: NextPage = () => {
                       getValueFromEvent={normFile}
                       extra="upload image for nft"
                     >
-                      <input type="file" onChange={onChange} />
+                      <input type="file" />
                     </Form.Item>
 
                     <Form.Item
@@ -1167,30 +1302,14 @@ const Home: NextPage = () => {
               </div>
             </TabPane>
             <TabPane tab="My nfts" key="3">
-              <div className={styles.grid}>
-                <div className={styles.card}>
-                  <div className="nfts">
-                    <>
-                      {/* {allNFTs.forEach((nft) => {
-                        <div className={styles.card} key={nft.id}>
-                          <>
-                            <img
-                              src={nft.image}
-                              alt="nft image"
-                              style={{ height: 250, width: 250 }}
-                              // height={250}
-                              // width={250}
-                              key={nft.id}
-                            />
-                            <h1 key={nft.id}>{nft.name}</h1>
-                            <h3 key={nft.id}>{nft.symbol}</h3>
-                            <h3 key={nft.id}>{nft.description}</h3>
-                            {console.log(nft.name, "nfts here")}
-                          </>
-                        </div>;
-                      })} */}
-                    </>
-
+              {/* <div className={styles.grid}> */}
+                {/* <div className={styles.card}> */}
+                  <div className="nfts"
+                    style={{
+                      display: "inline-grid",
+                      gridTemplateColumns: "repeat(2,4fr)",
+                      columnGap: "10px",
+                    }}>
                     {allNFTs &&
                       allNFTs.map((n, i) => (
                         <div className={styles.card} key={i}>
@@ -1233,6 +1352,58 @@ const Home: NextPage = () => {
                       ))}
 
                     {/* <Image src={image} alt="nft image"></Image> */}
+                  </div>
+                {/* </div> */}
+              {/* </div> */}
+            </TabPane>
+            <TabPane tab="Create CandyMachine" key="4">
+              <div className={styles.grid}>
+                <div className={styles.card}>
+                  <div className="cndyMachine">
+                    <>
+                      <Form onFinish={createCandyMachine}>
+                        <Dragger {...props}>
+                          <p className="ant-upload-drag-icon">
+                            <InboxOutlined />
+                          </p>
+                          <p className="ant-upload-text">
+                            Click or drag file to this area to upload
+                          </p>
+                          <p className="ant-upload-hint">
+                            Support for a single or bulk upload.
+                          </p>
+                        </Dragger>
+                        <Form.Item
+                          label="Mint price "
+                          style={{ marginTop: "10px" }}
+                        >
+                          <Input placeholder="1" />
+                        </Form.Item>
+                        <Form.Item label="Seller fee(%)">
+                          <Input placeholder="8" />
+                        </Form.Item>
+                        <Form.Item label="Number of nfts">
+                          <Input placeholder="20" />
+                        </Form.Item>
+                        <Form.Item label="Creators">
+                          <Input placeholder={publicKey.toBase58()} />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Submit
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  </div>
+                </div>
+              </div>
+            </TabPane>
+            <TabPane tab="Launchpad" key="5">
+              <div className={styles.grid}>
+                <div className={styles.card}>
+                  <div className="launchpad">
+                    <></>
                   </div>
                 </div>
               </div>
@@ -1287,8 +1458,3 @@ const Home: NextPage = () => {
 };
 
 export default Home;
-
-export async function getStaticProps(context) {
-  const auction = await import("./api/data/auction.json");
-  return { props: { auction: auction.default } };
-}
