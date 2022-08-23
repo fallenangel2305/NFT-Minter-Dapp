@@ -64,7 +64,7 @@ import {
   toMetaplexFileFromBrowser,
   walletAdapterIdentity,
   WRAPPED_SOL_MINT,
-} from "@metaplex-foundation/js/packages/js";
+} from "@metaplex-foundation/js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 import MetaplexConnection from "../components/MetaplexConnection";
@@ -206,14 +206,35 @@ const Home: NextPage = () => {
     }
   };
   const normFile = (e: { filelist: any }) => {
-    // console.log("Upload event:", e);
-
+    console.log("Upload event:", e.filelist);
+    // setUploadFile(e.target.file)
     if (Array.isArray(e)) {
       return e;
     }
 
     return e?.filelist;
   };
+
+  async function onChange(e) {
+    let file = e.target.files[0];
+    setUploadFile(file);
+    console.log(file, "file data");
+
+    // if (file.size > 2000000) {
+    //   alert("Image too big max is 2mb");
+    // } else {
+    //   console.log("upload file", file);
+    //   try {
+    //     const added = await ipfs.add(file);
+
+    //     console.log("upload file path", added);
+    //     const url = `https://ipfs.infura.io/ipfs/${added.path}`;
+    //     updateFileUrl(url);
+    //   } catch (error) {
+    //     console.log("Error uploading file: ", error);
+    //   }
+    // }
+  }
 
   function onChangeSwitch(checked: any) {
     if (checked) {
@@ -293,14 +314,19 @@ const Home: NextPage = () => {
     const feeWithdrawalDestination = values.feeWithdrawalDestination;
     const treasuryWithdrawalDestinationOwner =
       values.treasuryWithdrawalDestinationOwner;
-      console.log(auctionAddress,sellerFeeBasisPoints,feeWithdrawalDestination,treasuryWithdrawalDestinationOwner)
+    console.log(
+      auctionAddress,
+      sellerFeeBasisPoints,
+      feeWithdrawalDestination,
+      treasuryWithdrawalDestinationOwner
+    );
     try {
       const retrievedAuctionHouse = await metaplex
         .auctions()
         .findAuctionHouseByAddress(new PublicKey(auctionAddress))
         .run();
 
-      console.log(retrievedAuctionHouse.address.toString())
+      console.log(retrievedAuctionHouse.address.toString());
 
       const auctionHouse = await metaplex
         .auctions()
@@ -324,7 +350,7 @@ const Home: NextPage = () => {
     }
   };
   const [auctionAddress, setAuctionAddress] = useState("");
-  const [auctionFee, setAuctionFee] = useState("");
+  const [auctionFee, setAuctionFee] = useState<any>("");
   const findAuction = async (values) => {
     try {
       const authority = metaplex.identity();
@@ -355,14 +381,17 @@ const Home: NextPage = () => {
     e.preventDefault();
     try {
       const authority = metaplex.identity();
-      const NFTs = await metaplex.nfts().findAllByOwner(publicKey).run();
+      const NFTs = await metaplex
+        .nfts()
+        .findAllByOwner({ owner: publicKey })
+        .run();
       const mintAddress = e.target.mintAddress.value;
 
       const price = e.target.price.value;
       console.log(mintAddress, "mint address");
       console.log(price, "price");
 
-      console.log(NFTs[0].mintAddress.toString(), " nft");
+      console.log(NFTs[0], " nft");
       const auctionHouse = await metaplex
         .auctions()
         .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
@@ -421,7 +450,10 @@ const Home: NextPage = () => {
     const tradeStateAddress = e.target.tradeStateAddress.value;
     const price = e.target.price.value;
     console.log(mintAddress, price, "mintaddress price");
-    const NFTs = await metaplex.nfts().findAllByOwner(publicKey).run();
+    const NFTs = await metaplex
+      .nfts()
+      .findAllByOwner({ owner: publicKey })
+      .run();
     const auctionHouse = await metaplex
       .auctions()
       .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
@@ -515,7 +547,10 @@ const Home: NextPage = () => {
     if (connected) {
       (async () => {
         try {
-          const NFTs = await metaplex.nfts().findAllByOwner(publicKey).run();
+          const NFTs = await metaplex
+            .nfts()
+            .findAllByOwner({ owner: publicKey })
+            .run();
           // const jsonNfts = await metaplex.nfts().load(NFTs).run();
 
           // console.log("nft from owner pubkey ", jsonNfts);
@@ -529,7 +564,8 @@ const Home: NextPage = () => {
                 .then((response) => response.json())
                 .then(async (data) => {
                   try {
-                    data.mintAddress = NFTs[i].mintAddress.toString();
+                    //@ts-ignore
+                    data.mintAddress = NFTs[i].mintAddress!.toString();
 
                     // console.log(data, "all data in map");
                     nfts.push(data);
@@ -706,18 +742,18 @@ const Home: NextPage = () => {
   const createCandyMachine = async (e) => {
     console.log("im here");
 
-    const tx = CandyMachine({
-      wallet,
-      publicKey,
-      network,
-    }).createAndInsertItemsToCandyMachine({
-      price: e.target.price.value,
-      sellerFeeBasisPoints: e.target.sellerFeeBasisPoints.value * 100,
-      itemsAvailable: e.target.itemsAvailable.value,
-      isMutable: e.target.isMutable.value,
-      creators: e.target.creators.value,
-    });
-    console.log(tx, "candymachine created");
+    // const tx = CandyMachine({
+    //   wallet,
+    //   publicKey,
+    //   network,
+    // }).createAndInsertItemsToCandyMachine({
+    //   price: e.target.price.value,
+    //   sellerFeeBasisPoints: e.target.sellerFeeBasisPoints.value * 100,
+    //   itemsAvailable: e.target.itemsAvailable.value,
+    //   isMutable: e.target.isMutable.value,
+    //   creators: e.target.creators.value,
+    // });
+    // console.log(tx, "candymachine created");
   };
 
   const uploadToBundlr = (info) => {
@@ -857,9 +893,7 @@ const Home: NextPage = () => {
                 <div className={styles.card}>
                   <div className="nfts">
                     <label>
-                      <h2>
-                        NB: If you want to find your auction house.
-                      </h2>
+                      <h2>NB: If you want to find your auction house.</h2>
                     </label>
                     <>
                       <Form onFinish={findAuction}>
@@ -886,8 +920,8 @@ const Home: NextPage = () => {
                       </Form>
                       {auctionAddress ? (
                         <>
-                        <h3>Your auctionhouse address : {auctionAddress}</h3>
-                        <h3>Your auctionhouse Fee : {auctionFee/100}%</h3>
+                          <h3>Your auctionhouse address : {auctionAddress}</h3>
+                          <h3>Your auctionhouse Fee : {auctionFee / 100}%</h3>
                         </>
                       ) : null}
                     </>
@@ -901,7 +935,8 @@ const Home: NextPage = () => {
                   <div className="nfts">
                     <label>
                       <h2>
-                        NB:  Update your auction settings. Some changes are irreversible.
+                        NB: Update your auction settings. Some changes are
+                        irreversible.
                       </h2>
                     </label>
                     <>
@@ -909,9 +944,11 @@ const Home: NextPage = () => {
                         <Form.Item
                           name={["auctionAddress"]}
                           label="AuctionHouse Address"
-                          
                         >
-                          <Input  required placeholder="5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax"/>
+                          <Input
+                            required
+                            placeholder="5nHM2fhir19nk2hXK1fQogYqbDym4sivdWAAurZGSQax"
+                          />
                         </Form.Item>
                         {/* <Form.Item
                           name={["newAuthority"]}
@@ -1083,7 +1120,7 @@ const Home: NextPage = () => {
                       getValueFromEvent={normFile}
                       extra="upload image for nft"
                     >
-                      <input type="file" />
+                      <input type="file" onChange={onChange} />
                     </Form.Item>
 
                     <Form.Item
@@ -1303,57 +1340,59 @@ const Home: NextPage = () => {
             </TabPane>
             <TabPane tab="My nfts" key="3">
               {/* <div className={styles.grid}> */}
-                {/* <div className={styles.card}> */}
-                  <div className="nfts"
-                    style={{
-                      display: "inline-grid",
-                      gridTemplateColumns: "repeat(2,4fr)",
-                      columnGap: "10px",
-                    }}>
-                    {allNFTs &&
-                      allNFTs.map((n, i) => (
-                        <div className={styles.card} key={i}>
-                          <>
-                            {/* {console.log(allNFTs, "nfts here")} */}
-                            <img
-                              src={n.image}
-                              alt="nft image"
-                              style={{ height: 250, width: 250 }}
-                              // height={250}
-                              // width={250}
-                              key={i + 1}
+              {/* <div className={styles.card}> */}
+              <div
+                className="nfts"
+                style={{
+                  display: "inline-grid",
+                  gridTemplateColumns: "repeat(2,4fr)",
+                  columnGap: "10px",
+                }}
+              >
+                {allNFTs &&
+                  allNFTs.map((n, i) => (
+                    <div className={styles.card} key={i}>
+                      <>
+                        {/* {console.log(allNFTs, "nfts here")} */}
+                        <img
+                          src={n.image}
+                          alt="nft image"
+                          style={{ height: 250, width: 250 }}
+                          // height={250}
+                          // width={250}
+                          key={i + 1}
+                        />
+                        <h1 key={i + 2}>{n.name}</h1>
+                        <h3 key={i + 3}>{n.symbol}</h3>
+                        <h3 key={i + 4}>{n.description}</h3>
+                        <h3 key={i + 5}>{n.mintAddress}</h3>
+                        {/* {console.log(n, "nfts here")} */}
+
+                        <form onSubmit={listNft}>
+                          <label>
+                            price:
+                            <Input
+                              name="mintAddress"
+                              type={"hidden"}
+                              value={n.mintAddress}
                             />
-                            <h1 key={i + 2}>{n.name}</h1>
-                            <h3 key={i + 3}>{n.symbol}</h3>
-                            <h3 key={i + 4}>{n.description}</h3>
-                            <h3 key={i + 5}>{n.mintAddress}</h3>
-                            {/* {console.log(n, "nfts here")} */}
+                            <Input
+                              name="price"
+                              type="text"
+                              required
+                              min={0.001}
+                            />
+                          </label>
 
-                            <form onSubmit={listNft}>
-                              <label>
-                                price:
-                                <Input
-                                  name="mintAddress"
-                                  type={"hidden"}
-                                  value={n.mintAddress}
-                                />
-                                <Input
-                                  name="price"
-                                  type="text"
-                                  required
-                                  min={0.001}
-                                />
-                              </label>
+                          <input name="submit" type="submit" value="Sell" />
+                        </form>
+                      </>
+                    </div>
+                  ))}
 
-                              <input name="submit" type="submit" value="Sell" />
-                            </form>
-                          </>
-                        </div>
-                      ))}
-
-                    {/* <Image src={image} alt="nft image"></Image> */}
-                  </div>
-                {/* </div> */}
+                {/* <Image src={image} alt="nft image"></Image> */}
+              </div>
+              {/* </div> */}
               {/* </div> */}
             </TabPane>
             <TabPane tab="Create CandyMachine" key="4">

@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@metaplex-foundation/js": "^0.15.0",
+    "@metaplex-foundation/js-plugin-nft-storage": "^0.1.1",
     "@metaplex-foundation/mpl-auction-house": "^2.1.1",
     "@metaplex-foundation/mpl-core": "^0.6.1",
     "@solana/spl-token": "^0.2.0",

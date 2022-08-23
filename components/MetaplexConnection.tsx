@@ -5,9 +5,9 @@ import {
   toMetaplexFileFromBrowser,
   walletAdapterIdentity,
   WRAPPED_SOL_MINT,
-} from "@metaplex-foundation/js/packages/js";
+} from "@metaplex-foundation/js";
 import { Connection } from "@solana/web3.js";
-import { nftStorage } from "@metaplex-foundation/js/packages/js-plugin-nft-storage";
+import { nftStorage } from "@metaplex-foundation/js-plugin-nft-storage";
 
 function MetaplexConnection(props) {
   const network = props.network;
