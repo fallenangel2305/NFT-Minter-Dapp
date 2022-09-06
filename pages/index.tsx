@@ -707,6 +707,7 @@ const Home: NextPage = () => {
 
       for (let i = 0; i < accounts.length; i++) {
         const tradeState = new PublicKey(
+          /*@ts-ignore*/
           accounts[i].account.data.slice(8, 8 + 32)
         );
         try {
