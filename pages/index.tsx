@@ -6,6 +6,9 @@ import {
   LAMPORTS_PER_SOL,
   GetProgramAccountsFilter,
   Transaction,
+  TransactionInstruction,
+  sendAndConfirmTransaction,
+  Account,
 } from "@solana/web3.js";
 //import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 // import {
@@ -48,9 +51,14 @@ import {
 } from "@ant-design/icons";
 import { WalletNotConnectedError } from "@solana/wallet-adapter-base";
 import fs from "fs";
-import { ListingReceipt } from "@metaplex-foundation/mpl-auction-house";
+import {
+  ListingReceipt,
+  createWithdrawFromTreasuryInstruction,
+  WithdrawFromTreasuryInstructionAccounts,
+  WithdrawFromTreasuryInstructionArgs,
+} from "@metaplex-foundation/mpl-auction-house";
 import * as core from "@metaplex-foundation/mpl-core";
-import * as beet from "@metaplex-foundation/beet";
+
 import * as splToken from "@solana/spl-token";
 
 import React from "react";
@@ -72,6 +80,11 @@ import HolderChecker from "../components/HolderChecker";
 import CandyMachine from "../components/CandyMachine";
 import Dragger from "antd/lib/upload/Dragger";
 import AuctionHouseFilter from "../components/AuctionHouseFilter";
+import * as beet from "@metaplex-foundation/beet";
+
+import nacl from "tweetnacl";
+import * as bip39 from "bip39";
+import { derivePath } from "ed25519-hd-key";
 
 const { TabPane } = Tabs;
 const layout = {
@@ -96,8 +109,7 @@ const validateMessages = {
 /* eslint-enable no-template-curly-in-string */
 
 const Home: NextPage = () => {
-  const { publicKey, connected, connecting, disconnecting, sendTransaction } =
-    useWallet();
+  const { publicKey, connected, connecting, disconnecting } = useWallet();
   const wallet = useWallet();
   const [mintAddress, setMintAddress] = useState("");
   const [url, setUrl] = useState("");
@@ -351,6 +363,7 @@ const Home: NextPage = () => {
   };
   const [auctionAddress, setAuctionAddress] = useState("");
   const [auctionFee, setAuctionFee] = useState<any>("");
+  const [auctionFeeAccount, setAuctionFeeAccount] = useState<any>("");
   const findAuction = async (values) => {
     try {
       const authority = metaplex.identity();
@@ -370,6 +383,7 @@ const Home: NextPage = () => {
 
       setAuctionAddress(retrievedAuctionHouse.address.toBase58());
       setAuctionFee(retrievedAuctionHouse.sellerFeeBasisPoints.toString());
+      setAuctionFeeAccount(retrievedAuctionHouse.feeAccountAddress.toBase58());
       console.log(retrievedAuctionHouse, "auction house address");
     } catch (error) {
       console.log(error);
@@ -631,11 +645,12 @@ const Home: NextPage = () => {
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
     setListedNfts([]);
+    console.log(listedNfts, "SHOULD BE EMPTY");
     buildAuctionHouseFilter(AUCTION_PUBKEY);
     return () => {
-      buildAuctionHouseFilter;
+      setListedNfts([]);
     };
-  }, [connected]);
+  }, [connected, network]);
 
   async function buildAuctionHouseFilter(filterString: string) {
     const LISTING_RECEIPT_SIZE =
@@ -690,48 +705,26 @@ const Home: NextPage = () => {
         .run();
       console.log(auctionHouse?.address?.toString(), "auction pubke");
 
-      accounts.forEach(async (account, i) => {
+      for (let i = 0; i < accounts.length; i++) {
+        const tradeState = new PublicKey(
+          accounts[i].account.data.slice(8, 8 + 32)
+        );
         try {
-          // console.log(account.pubkey.toBase58(), "account.pubkey");
-          ListingReceipt.fromAccountAddress(
-            metaplex.connection,
-            account.pubkey
-          ).then(async (listings) => {
-            if (
-              (listings.tradeState && listings.canceledAt != null) ||
-              (undefined && listings.purchaseReceipt != null) ||
-              undefined
-            ) {
-              // throw new Error(
-              //   `Unable to find ListingReceipt account at ${listings}`
-              // );
-              // console.log(
-              //   `Unable to find ListingReceipt account at ${listings.tradeState.toBase58()}`
-              // );
-            } else {
-              // console.log(listings.tradeState);
-              try {
-                const retrieveListing = await metaplex
-                  .auctions()
-                  .for(auctionHouse)
-                  .findListingByAddress(new PublicKey(listings.tradeState))
-                  .run();
-                if (retrieveListing.purchaseReceiptAddress == null) {
-                  // console.log(retrieveListing, "retrived listings");
-                  setListedNfts((listedNfts) => [
-                    ...listedNfts,
-                    retrieveListing,
-                  ]);
-                }
-              } catch (error) {
-                console.log(error);
-              }
-            }
-          });
+          const retrieveListing = await metaplex
+            .auctions()
+            .for(auctionHouse)
+            .findListingByAddress(new PublicKey(tradeState))
+            .run();
+
+          if (retrieveListing.purchaseReceiptAddress == null) {
+            console.log(retrieveListing, "retrived listings");
+
+            setListedNfts((listedNfts) => [...listedNfts, retrieveListing]);
+          }
         } catch (error) {
           console.log(error);
         }
-      });
+      }
     } catch (error) {
       console.log(error);
     }
@@ -790,6 +783,61 @@ const Home: NextPage = () => {
     },
   };
 
+  const onWithdrawFeeAuction = async (values) => {
+    const auctionHouse = await metaplex
+      .auctions()
+      .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+      .run();
+    console.log(
+      "AuctionHouse",
+      auctionHouse,
+      auctionHouse.treasuryMint.address.toBase58(),
+      "Treasury mint",
+      auctionHouse.feeAccountAddress.toBase58(),
+      "Fee withdraw dest",
+      auctionHouse.authorityAddress.toBase58(),
+      "Authority",
+      auctionHouse.treasuryAccountAddress.toBase58(),
+      "Teasury Account"
+    );
+
+    const amount: number = values.amount;
+    console.log(amount, "amount");
+
+    const accounts: WithdrawFromTreasuryInstructionAccounts = {
+      treasuryMint: auctionHouse.treasuryMint.address,
+      authority: auctionHouse.authorityAddress,
+      treasuryWithdrawalDestination:
+        auctionHouse.treasuryWithdrawalDestinationAddress,
+      auctionHouseTreasury: auctionHouse.treasuryAccountAddress,
+      auctionHouse: auctionHouse.address,
+    };
+    const args: WithdrawFromTreasuryInstructionArgs = {
+      // amount: new BN(Math.ceil(amount * LAMPORTS_PER_SOL)),
+      amount: new BN(amount * 10 ** 9),
+    };
+    console.log(args.amount.toString());
+
+    const tx = createWithdrawFromTreasuryInstruction(accounts, args);
+    console.log(tx, "tx");
+
+    const transaction = new Transaction().add(tx);
+    const txsig = await wallet.sendTransaction(transaction, connection);
+    console.log(txsig, "tx signature");
+  };
+
+  const getKeypair = async () => {
+    const mnemonic = "";
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+    const seedBuffer = Buffer.from(seed).toString("hex");
+    const path44Change = `m/44'/501'/0'/0'`;
+    const derivedSeed = derivePath(path44Change, seedBuffer).key;
+    const keypair = new Account(
+      nacl.sign.keyPair.fromSeed(derivedSeed).secretKey
+    );
+    console.log(keypair);
+  };
+  //getKeypair(); this function convert mnemonic phrase to keypair
   return (
     <div className={styles.container}>
       <Head>
@@ -801,7 +849,7 @@ const Home: NextPage = () => {
         <div style={{ margin: "10px" }}>
           <WalletMultiButton />
         </div>
-        <div>
+        {/* <div>
           <Space>
             <span>devnet</span>
 
@@ -814,7 +862,7 @@ const Home: NextPage = () => {
 
             <span>mainnet</span>
           </Space>
-        </div>
+        </div> */}
       </div>
       {connecting ? (
         <h1 className={styles.title}>Loading ... </h1>
@@ -922,6 +970,9 @@ const Home: NextPage = () => {
                         <>
                           <h3>Your auctionhouse address : {auctionAddress}</h3>
                           <h3>Your auctionhouse Fee : {auctionFee / 100}%</h3>
+                          <h3>
+                            Auction house fee wallet : {auctionFeeAccount}
+                          </h3>
                         </>
                       ) : null}
                     </>
@@ -982,6 +1033,32 @@ const Home: NextPage = () => {
                         <Form.Item>
                           <Button type="primary" htmlType="submit">
                             Update Auction House
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  </div>
+                </div>
+              </div>
+            </TabPane>
+            <TabPane tab="Withdraw Fee" key="3">
+              <div className={styles.grid}>
+                <div className={styles.card}>
+                  <div className="nfts">
+                    <label>
+                      <h2>NB: Withdraw Fee.</h2>
+                    </label>
+                    <>
+                      <Form onFinish={onWithdrawFeeAuction}>
+                        <Form.Item
+                          label="Withdraw fee amount"
+                          name={["amount"]}
+                        >
+                          <Input placeholder="1" required />
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Withdraw Fee
                           </Button>
                         </Form.Item>
                       </Form>

@@ -14,7 +14,7 @@ function MetaplexConnection(props) {
   const wallet = props.wallet;
   if (wallet) {
     if (network == "mainnet") {
-      var connection = new Connection("https://ssc-dao.genesysgo.net/");
+      var connection = new Connection("https://solana-api.projectserum.com/");
       var metaplex = Metaplex.make(connection);
 
       // metaplex.use(walletAdapterIdentity(wallet)).use(
@@ -26,7 +26,8 @@ function MetaplexConnection(props) {
       // );
     }
     if (network == "devnet") {
-      var connection = new Connection("https://devnet.genesysgo.net/");
+      var connection = new Connection("https://solana-api.projectserum.com/");
+      // var connection = new Connection("https://devnet.genesysgo.net/");
       var metaplex = Metaplex.make(connection);
       // metaplex.use(walletAdapterIdentity(wallet)).use(
       //   bundlrStorage({
