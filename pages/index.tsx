@@ -645,7 +645,6 @@ const Home: NextPage = () => {
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
     setListedNfts([]);
-    console.log(listedNfts, "SHOULD BE EMPTY");
     buildAuctionHouseFilter(AUCTION_PUBKEY);
     return () => {
       setListedNfts([]);
@@ -717,7 +716,10 @@ const Home: NextPage = () => {
             .findListingByAddress(new PublicKey(tradeState))
             .run();
 
-          if (retrieveListing.purchaseReceiptAddress == null) {
+          if (
+            retrieveListing.purchaseReceiptAddress == null &&
+            retrieveListing.canceledAt == null
+          ) {
             console.log(retrieveListing, "retrived listings");
 
             setListedNfts((listedNfts) => [...listedNfts, retrieveListing]);
