@@ -641,37 +641,40 @@ const Home: NextPage = () => {
       console.log(err);
     }
   };
-  try {
-    const cancelBid = async () => {
-      const tradeStateAddress = "GSJ2maKXxus2qpuwoHVxyHjEeK2VN9YgeQcyMGD4gUtq";
 
-      const auctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
-        .run();
+  useEffect(() => {
+    try {
+      const cancelBid = async () => {
+        const receipt = "DXKbL6dGtPLRhQB4xv5FJpUZAYpDgZWScm5F2pNQdudn";
 
-      try {
-        const bid = await metaplex
+        const auctionHouse = await metaplex
           .auctions()
-          .for(auctionHouse)
-          .findBidByTradeState(new PublicKey(tradeStateAddress))
+          .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
           .run();
 
-        const { response } = await metaplex
-          .auctions()
-          .for(auctionHouse)
-          .cancelBid({ bid })
-          .run();
-        console.log(response);
-      } catch (err) {
-        console.log(err);
-      }
-    };
+        try {
+          const bid = await metaplex
+            .auctions()
+            .for(auctionHouse)
+            .findBidByReceipt(new PublicKey(receipt))
+            .run();
 
-    cancelBid();
-  } catch (error) {
-    console.log(error);
-  }
+          const { response } = await metaplex
+            .auctions()
+            .for(auctionHouse)
+            .cancelBid({ bid })
+            .run();
+          console.log(response);
+        } catch (err) {
+          console.log(err);
+        }
+      };
+
+      cancelBid();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [publicKey]);
 
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
