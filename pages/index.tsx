@@ -642,39 +642,35 @@ const Home: NextPage = () => {
     }
   };
 
-  useEffect(() => {
+  const cancelBid = async () => {
     try {
-      const cancelBid = async () => {
-        const receipt = "DXKbL6dGtPLRhQB4xv5FJpUZAYpDgZWScm5F2pNQdudn";
+      const receipt = "DXKbL6dGtPLRhQB4xv5FJpUZAYpDgZWScm5F2pNQdudn";
 
-        const auctionHouse = await metaplex
+      const auctionHouse = await metaplex
+        .auctions()
+        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .run();
+
+      try {
+        const bid = await metaplex
           .auctions()
-          .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+          .for(auctionHouse)
+          .findBidByReceipt(new PublicKey(receipt))
           .run();
 
-        try {
-          const bid = await metaplex
-            .auctions()
-            .for(auctionHouse)
-            .findBidByReceipt(new PublicKey(receipt))
-            .run();
-
-          const { response } = await metaplex
-            .auctions()
-            .for(auctionHouse)
-            .cancelBid({ bid })
-            .run();
-          console.log(response);
-        } catch (err) {
-          console.log(err);
-        }
-      };
-
-      cancelBid();
+        const { response } = await metaplex
+          .auctions()
+          .for(auctionHouse)
+          .cancelBid({ bid })
+          .run();
+        console.log(response);
+      } catch (err) {
+        console.log(err);
+      }
     } catch (error) {
       console.log(error);
     }
-  }, [publicKey]);
+  };
 
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
@@ -908,7 +904,7 @@ const Home: NextPage = () => {
           <h1 className={styles.title}>Welcome </h1>
           <h2>Your PublicKey: {publicKey?.toString()}</h2>
           <h2>Auction PublicKey: {AUCTION_PUBKEY}</h2>
-
+          <Button onClick={cancelBid}>Sanad click here</Button>
           <p className={styles.description}>
             {/* Get started by editing{" "}
         <code className={styles.code}>pages/index.tsx</code> */}
