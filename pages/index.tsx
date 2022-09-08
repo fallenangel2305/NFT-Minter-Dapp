@@ -641,6 +641,37 @@ const Home: NextPage = () => {
       console.log(err);
     }
   };
+  try {
+    const cancelBid = async () => {
+      const tradeStateAddress = "GSJ2maKXxus2qpuwoHVxyHjEeK2VN9YgeQcyMGD4gUtq";
+
+      const auctionHouse = await metaplex
+        .auctions()
+        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .run();
+
+      try {
+        const bid = await metaplex
+          .auctions()
+          .for(auctionHouse)
+          .findBidByTradeState(new PublicKey(tradeStateAddress))
+          .run();
+
+        const { response } = await metaplex
+          .auctions()
+          .for(auctionHouse)
+          .cancelBid({ bid })
+          .run();
+        console.log(response);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    cancelBid();
+  } catch (error) {
+    console.log(error);
+  }
 
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
