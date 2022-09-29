@@ -5,16 +5,20 @@ import {
   toMetaplexFileFromBrowser,
   walletAdapterIdentity,
   WRAPPED_SOL_MINT,
-} from "@metaplex-foundation/js";
+} from "@metaplex-foundation/js/packages/js";
 import { Connection } from "@solana/web3.js";
-import { nftStorage } from "@metaplex-foundation/js-plugin-nft-storage";
+import { nftStorage } from "@metaplex-foundation/js/packages/js-plugin-nft-storage";
 
 function MetaplexConnection(props) {
   const network = props.network;
   const wallet = props.wallet;
+
   if (wallet) {
     if (network == "mainnet") {
-      var connection = new Connection("https://solana-api.projectserum.com/");
+      var connection = new Connection(
+        "https://solana-api.projectserum.com/",
+        "confirmed"
+      );
       var metaplex = Metaplex.make(connection);
 
       // metaplex.use(walletAdapterIdentity(wallet)).use(
@@ -37,14 +41,17 @@ function MetaplexConnection(props) {
       //   })
       // );
     }
+    /*@ts-ignore*/
     metaplex.use(walletAdapterIdentity(wallet)).use(
       nftStorage({
         token: process.env.NFT_STORAGE_API,
       })
     );
+    /*@ts-ignore*/
+    console.log(metaplex);
     // put api key in env
   }
-
+  /*@ts-ignore*/
   return { connection, metaplex };
 }
 

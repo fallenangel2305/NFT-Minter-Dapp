@@ -101,7 +101,9 @@ function AuctionHouseFilter(props) {
   }
   auctionHouseListingFilter(auctionPubkey);
   // console.log(retrieveListings, "retrieveListings");
+  /*@ts-ignore*/
   console.log(retrieveListings, "retrieveListings");
+  /*@ts-ignore*/
   return { retrieveListings };
 }
 

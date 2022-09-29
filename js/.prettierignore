@@ -1,0 +1,10 @@
+**/.git
+**/.github
+**/node_modules
+**/dist
+
+.prettierrc
+package.json
+tsconfig.cjs.json
+tsconfig.json
+README.md

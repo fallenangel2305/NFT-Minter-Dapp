@@ -56,6 +56,9 @@ import {
   createWithdrawFromTreasuryInstruction,
   WithdrawFromTreasuryInstructionAccounts,
   WithdrawFromTreasuryInstructionArgs,
+  WithdrawInstructionAccounts,
+  WithdrawInstructionArgs,
+  createWithdrawInstruction,
 } from "@metaplex-foundation/mpl-auction-house";
 import * as core from "@metaplex-foundation/mpl-core";
 
@@ -64,7 +67,7 @@ import * as splToken from "@solana/spl-token";
 import React from "react";
 
 import axios from "axios";
-import BN from "big-number";
+
 import {
   bundlrStorage,
   Metaplex,
@@ -72,7 +75,10 @@ import {
   toMetaplexFileFromBrowser,
   walletAdapterIdentity,
   WRAPPED_SOL_MINT,
-} from "@metaplex-foundation/js";
+  toBigNumber,
+  findAuctionHouseBuyerEscrowPda,
+  toPublicKey,
+} from "@metaplex-foundation/js/packages/js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 import MetaplexConnection from "../components/MetaplexConnection";
@@ -85,7 +91,7 @@ import * as beet from "@metaplex-foundation/beet";
 import nacl from "tweetnacl";
 import * as bip39 from "bip39";
 import { derivePath } from "ed25519-hd-key";
-
+let BigNumber = require("big-number");
 const { TabPane } = Tabs;
 const layout = {
   labelCol: {
@@ -174,7 +180,7 @@ const Home: NextPage = () => {
     try {
       var updatedMetaData = {
         ...metaData,
-        // eslint-disable-next-line react-hooks/rules-of-hooks
+        /*@ts-ignore*/
         image: await toMetaplexFileFromBrowser(uploadFile),
       };
       // console.log(updatedMetaData, "updated metadata");
@@ -298,8 +304,8 @@ const Home: NextPage = () => {
     );
     try {
       const auctionHouse = await metaplex
-        .auctions()
-        .createAuctionHouse({
+        .auctionHouse()
+        .create({
           sellerFeeBasisPoints,
           requiresSignOff: false,
           treasuryMint: new PublicKey(treasuryMint),
@@ -334,25 +340,25 @@ const Home: NextPage = () => {
     );
     try {
       const retrievedAuctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(auctionAddress))
+        .auctionHouse()
+        .findByAddress({ address: new PublicKey(auctionAddress) })
         .run();
 
       console.log(retrievedAuctionHouse.address.toString());
 
       const auctionHouse = await metaplex
-        .auctions()
-        .updateAuctionHouse(retrievedAuctionHouse, {
+        .auctionHouse()
+        .update({
+          auctionHouse: retrievedAuctionHouse,
           sellerFeeBasisPoints,
           // newAuthority: new PublicKey(newAuthority), only use when need changing to new address might cause access to auction house
           requiresSignOff: false,
-          authority: authority,
+          newAuthority: authority.publicKey,
           canChangeSalePrice: true,
           feeWithdrawalDestination: new PublicKey(feeWithdrawalDestination),
           treasuryWithdrawalDestinationOwner: new PublicKey(
             treasuryWithdrawalDestinationOwner
           ),
-          payer: authority,
         })
         .run();
 
@@ -374,13 +380,20 @@ const Home: NextPage = () => {
       const treasuryMintAddress = values.treasuryMint;
       console.log(publicKey, treasuryMintAddress);
       const retrievedAuctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByCreatorAndMint(
-          new PublicKey(publicKey),
-          new PublicKey(treasuryMintAddress)
-        )
+        .auctionHouse()
+        .findByCreatorAndMint({
+          creator: new PublicKey(publicKey),
+          treasuryMint: new PublicKey(treasuryMintAddress),
+        })
         .run();
-
+      const creator = new PublicKey(
+        "ALANxufXrctBDWw7x3tmPoUKDBpwmCHwjJWGxxZVStS9"
+      );
+      const getNfts = await metaplex
+        .nfts()
+        .findAllByCreator({ creator: creator, position: 1 })
+        .run();
+      console.log(getNfts, "getnfts");
       setAuctionAddress(retrievedAuctionHouse.address.toBase58());
       setAuctionFee(retrievedAuctionHouse.sellerFeeBasisPoints.toString());
       setAuctionFeeAccount(retrievedAuctionHouse.feeAccountAddress.toBase58());
@@ -395,8 +408,10 @@ const Home: NextPage = () => {
     e.preventDefault();
     try {
       const authority = metaplex.identity();
+
       const NFTs = await metaplex
         .nfts()
+        /*@ts-ignore*/
         .findAllByOwner({ owner: publicKey })
         .run();
       const mintAddress = e.target.mintAddress.value;
@@ -407,17 +422,16 @@ const Home: NextPage = () => {
 
       console.log(NFTs[0], " nft");
       const auctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .auctionHouse()
+        .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
         .run();
 
       console.log(auctionHouse.feeAccountAddress.toString(), "fee account");
 
       const { listing, sellerTradeState, receipt } = await metaplex
-        .auctions()
-        .for(auctionHouse)
+        .auctionHouse()
         .list({
-          // mintAccount: NFTs[1].mintAddress,
+          auctionHouse: auctionHouse,
           mintAccount: new PublicKey(mintAddress),
           price: sol(price),
           printReceipt: true,
@@ -466,27 +480,27 @@ const Home: NextPage = () => {
     console.log(mintAddress, price, "mintaddress price");
     const NFTs = await metaplex
       .nfts()
+      /*@ts-ignore*/
       .findAllByOwner({ owner: publicKey })
       .run();
     const auctionHouse = await metaplex
-      .auctions()
-      .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+      .auctionHouse()
+      .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
       .run();
 
     try {
       const listing = await metaplex
-        .auctions()
-        .for(auctionHouse)
-        .findListingByAddress(
-          new PublicKey(tradeStateAddress) //TradeState
+        .auctionHouse()
+        .findListingByTradeState(
+          { auctionHouse, tradeStateAddress: new PublicKey(tradeStateAddress) } //TradeState
         )
         .run();
 
       const { bid, buyerTradeState, receipt } = await metaplex
-        .auctions()
-        .for(auctionHouse)
+        .auctionHouse()
         .bid({
           // mintAccount: NFTs[1].mintAddress,
+          auctionHouse,
           mintAccount: new PublicKey(
             mintAddress // NFT mintAddress
           ),
@@ -500,9 +514,8 @@ const Home: NextPage = () => {
       ) {
         const authority = metaplex.identity();
         const tx = await metaplex
-          .auctions()
-          .for(auctionHouse)
-          .executeSale({ bid, listing })
+          .auctionHouse()
+          .executeSale({ auctionHouse, bid, listing })
           .run();
         console.log(tx, "purchase txsig");
         // const options = {
@@ -563,6 +576,7 @@ const Home: NextPage = () => {
         try {
           const NFTs = await metaplex
             .nfts()
+            /*@ts-ignore*/
             .findAllByOwner({ owner: publicKey })
             .run();
           // const jsonNfts = await metaplex.nfts().load(NFTs).run();
@@ -571,6 +585,7 @@ const Home: NextPage = () => {
 
           var nfts = [];
           console.log(NFTs, "nft +++++++++");
+          /*@ts-ignore*/
           setAllNftsOnchain(NFTs);
           NFTs &&
             NFTs.map(async (nft, i) => {
@@ -582,6 +597,7 @@ const Home: NextPage = () => {
                     data.mintAddress = NFTs[i].mintAddress!.toString();
 
                     // console.log(data, "all data in map");
+                    /*@ts-ignore*/
                     nfts.push(data);
                     if (nfts.length == NFTs.length) {
                       // Array.prototype.push.apply(nfts, NFTs);
@@ -618,23 +634,21 @@ const Home: NextPage = () => {
     console.log(tradeStateAddress);
 
     const auctionHouse = await metaplex
-      .auctions()
-      .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+      .auctionHouse()
+      .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
       .run();
 
     try {
       const listing = await metaplex
-        .auctions()
-        .for(auctionHouse)
-        .findListingByAddress(
-          new PublicKey(tradeStateAddress) //TradeState
+        .auctionHouse()
+        .findListingByTradeState(
+          { auctionHouse, tradeStateAddress: new PublicKey(tradeStateAddress) } //TradeState
         )
         .run();
 
       const { response } = await metaplex
-        .auctions()
-        .for(auctionHouse)
-        .cancelListing({ listing })
+        .auctionHouse()
+        .cancelListing({ auctionHouse, listing })
         .run();
       console.log(response);
     } catch (err) {
@@ -647,21 +661,23 @@ const Home: NextPage = () => {
       const receipt = "DXKbL6dGtPLRhQB4xv5FJpUZAYpDgZWScm5F2pNQdudn";
 
       const auctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .auctionHouse()
+        .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
         .run();
 
       try {
         const bid = await metaplex
-          .auctions()
-          .for(auctionHouse)
-          .findBidByReceipt(new PublicKey(receipt))
+          .auctionHouse()
+          .findBidByReceipt({
+            auctionHouse,
+            receiptAddress: new PublicKey(receipt),
+          })
           .run();
+        console.log(bid, "sanad's bid ");
 
         const { response } = await metaplex
-          .auctions()
-          .for(auctionHouse)
-          .cancelBid({ bid })
+          .auctionHouse()
+          .cancelBid({ auctionHouse, bid })
           .run();
         console.log(response);
       } catch (err) {
@@ -672,6 +688,37 @@ const Home: NextPage = () => {
     }
   };
 
+  const withdraw = async () => {
+    const auctionHouse = await metaplex
+      .auctionHouse()
+      .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
+      .run();
+    console.log(auctionHouse);
+
+    const authority = auctionHouse.authorityAddress;
+    const buyer = "2eVAYwxrfZiPBQYVpjUKSgXPCLWEaACqaeo6j7ijK48G";
+    const amount = sol(1);
+    const buyerEscrow = findAuctionHouseBuyerEscrowPda(
+      auctionHouse.address,
+      /*@ts-ignore*/
+      publicKey
+    );
+    let buyerEscrowBalance = await metaplex.rpc().getBalance(buyerEscrow);
+    const minimumRentExempt = await metaplex.rpc().getRent(0);
+    console.log(
+      "Your escrow balance:",
+      buyerEscrowBalance.basisPoints.toNumber() / LAMPORTS_PER_SOL,
+      buyerEscrowBalance.currency.symbol
+    );
+    const tx = await metaplex
+      .auctionHouse()
+      .withdrawFromBuyerAccount({
+        auctionHouse,
+        amount,
+      })
+      .run();
+    console.log("successfully withdraw from bid escrow", tx);
+  };
   const [listedNfts, setListedNfts] = useState([]);
   useEffect(() => {
     setListedNfts([]);
@@ -729,21 +776,25 @@ const Home: NextPage = () => {
       console.log(accounts);
 
       const auctionHouse = await metaplex
-        .auctions()
-        .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+        .auctionHouse()
+        .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
         .run();
       console.log(auctionHouse?.address?.toString(), "auction pubke");
 
       for (let i = 0; i < accounts.length; i++) {
-        const tradeState = new PublicKey(
+        const tradeStateAddress = new PublicKey(
           /*@ts-ignore*/
           accounts[i].account.data.slice(8, 8 + 32)
         );
         try {
           const retrieveListing = await metaplex
-            .auctions()
-            .for(auctionHouse)
-            .findListingByAddress(new PublicKey(tradeState))
+            .auctionHouse()
+            .findListingByTradeState(
+              {
+                auctionHouse,
+                tradeStateAddress: new PublicKey(tradeStateAddress),
+              } //TradeState
+            )
             .run();
 
           if (
@@ -751,7 +802,7 @@ const Home: NextPage = () => {
             retrieveListing.canceledAt == null
           ) {
             console.log(retrieveListing, "retrived listings");
-
+            /*@ts-ignore*/
             setListedNfts((listedNfts) => [...listedNfts, retrieveListing]);
           }
         } catch (error) {
@@ -818,45 +869,30 @@ const Home: NextPage = () => {
 
   const onWithdrawFeeAuction = async (values) => {
     const auctionHouse = await metaplex
-      .auctions()
-      .findAuctionHouseByAddress(new PublicKey(AUCTION_PUBKEY))
+      .auctionHouse()
+      .findByAddress({ address: new PublicKey(AUCTION_PUBKEY) })
       .run();
-    console.log(
-      "AuctionHouse",
-      auctionHouse,
-      auctionHouse.treasuryMint.address.toBase58(),
-      "Treasury mint",
-      auctionHouse.feeAccountAddress.toBase58(),
-      "Fee withdraw dest",
-      auctionHouse.authorityAddress.toBase58(),
-      "Authority",
-      auctionHouse.treasuryAccountAddress.toBase58(),
-      "Teasury Account"
-    );
 
-    const amount: number = values.amount;
+    const amount = sol(values.amount);
     console.log(amount, "amount");
-
-    const accounts: WithdrawFromTreasuryInstructionAccounts = {
-      treasuryMint: auctionHouse.treasuryMint.address,
-      authority: auctionHouse.authorityAddress,
-      treasuryWithdrawalDestination:
-        auctionHouse.treasuryWithdrawalDestinationAddress,
-      auctionHouseTreasury: auctionHouse.treasuryAccountAddress,
-      auctionHouse: auctionHouse.address,
-    };
-    const args: WithdrawFromTreasuryInstructionArgs = {
-      // amount: new BN(Math.ceil(amount * LAMPORTS_PER_SOL)),
-      amount: new BN(amount * 10 ** 9),
-    };
-    console.log(args.amount.toString());
-
-    const tx = createWithdrawFromTreasuryInstruction(accounts, args);
-    console.log(tx, "tx");
-
-    const transaction = new Transaction().add(tx);
-    const txsig = await wallet.sendTransaction(transaction, connection);
-    console.log(txsig, "tx signature");
+    const originalTreasuryWithdrawalDestinationBalance = await metaplex
+      .rpc()
+      .getBalance(
+        toPublicKey(auctionHouse.treasuryWithdrawalDestinationAddress)
+      );
+    console.log(
+      "Treasury balance",
+      originalTreasuryWithdrawalDestinationBalance.basisPoints.toNumber() /
+        LAMPORTS_PER_SOL,
+      originalTreasuryWithdrawalDestinationBalance.currency.symbol
+    );
+    const tx = await metaplex
+      .auctionHouse()
+      .withdrawFromTreasuryAccount({
+        auctionHouse,
+        amount,
+      })
+      .run();
   };
 
   const getKeypair = async () => {
@@ -904,7 +940,9 @@ const Home: NextPage = () => {
           <h1 className={styles.title}>Welcome </h1>
           <h2>Your PublicKey: {publicKey?.toString()}</h2>
           <h2>Auction PublicKey: {AUCTION_PUBKEY}</h2>
-          <Button onClick={cancelBid}>Sanad click here</Button>
+          <Button onClick={cancelBid}>click here cancel bid</Button>
+          <Button onClick={withdraw}>Bro click here to withdraw</Button>
+
           <p className={styles.description}>
             {/* Get started by editing{" "}
         <code className={styles.code}>pages/index.tsx</code> */}
@@ -947,14 +985,14 @@ const Home: NextPage = () => {
                         <Form.Item
                           label="Address to withdraw fee"
                           name={["feeWithdrawalDestination"]}
-                          initialValue={publicKey.toBase58()}
+                          initialValue={publicKey?.toBase58()}
                         >
                           <Input required />
                         </Form.Item>
                         <Form.Item
                           label="Withdraw fee owner address"
                           name={["treasuryWithdrawalDestinationOwner"]}
-                          initialValue={publicKey.toBase58()}
+                          initialValue={publicKey?.toBase58()}
                         >
                           <Input required />
                         </Form.Item>
@@ -982,7 +1020,7 @@ const Home: NextPage = () => {
                           label="PublicKey used to create auction"
                           name={["userPublicKey"]}
                           style={{ marginTop: "10px" }}
-                          initialValue={publicKey.toBase58()}
+                          initialValue={publicKey?.toBase58()}
                         >
                           <Input required />
                         </Form.Item>
@@ -1052,14 +1090,14 @@ const Home: NextPage = () => {
                         <Form.Item
                           label="Address to withdraw fee"
                           name={["feeWithdrawalDestination"]}
-                          initialValue={publicKey.toBase58()}
+                          initialValue={publicKey?.toBase58()}
                         >
                           <Input required />
                         </Form.Item>
                         <Form.Item
                           label="Withdraw fee owner address"
                           name={["treasuryWithdrawalDestinationOwner"]}
-                          initialValue={publicKey.toBase58()}
+                          initialValue={publicKey?.toBase58()}
                         >
                           <Input required />
                         </Form.Item>
@@ -1117,7 +1155,7 @@ const Home: NextPage = () => {
                 <>
                   {/* <Auction /> */}
                   {listedNfts &&
-                    listedNfts.map((n, i) => (
+                    listedNfts.map((n: any, i) => (
                       <div className={styles.card} key={i}>
                         <>
                           {/* {console.log(allNFTs, "nfts here")} */}
@@ -1144,7 +1182,7 @@ const Home: NextPage = () => {
                           </h3>
 
                           {/* {console.log(n, "nfts here")} */}
-                          {n?.sellerAddress == publicKey.toString() ? (
+                          {n?.sellerAddress == publicKey?.toString() ? (
                             <form onSubmit={cancelListing}>
                               <label>
                                 <Input
@@ -1460,7 +1498,7 @@ const Home: NextPage = () => {
                 }}
               >
                 {allNFTs &&
-                  allNFTs.map((n, i) => (
+                  allNFTs.map((n: any, i) => (
                     <div className={styles.card} key={i}>
                       <>
                         {/* {console.log(allNFTs, "nfts here")} */}
@@ -1535,7 +1573,7 @@ const Home: NextPage = () => {
                           <Input placeholder="20" />
                         </Form.Item>
                         <Form.Item label="Creators">
-                          <Input placeholder={publicKey.toBase58()} />
+                          <Input placeholder={publicKey?.toBase58()} />
                         </Form.Item>
                         <Form.Item>
                           <Button type="primary" htmlType="submit">

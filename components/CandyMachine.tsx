@@ -14,7 +14,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 //import { bundlrStorage } from "@metaplex-foundation/js";
 
-import { sol, toBigNumber } from "@metaplex-foundation/js";
+import { sol, toBigNumber } from "@metaplex-foundation/js/packages/js";
 
 import MetaplexConnection from "../components/MetaplexConnection";
 

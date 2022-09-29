@@ -7,14 +7,11 @@ function HolderChecker(props) {
   const connection = props.connection;
   console.log(process.env.TOKEN_ACCOUNT_TO_SEARCH);
 
-  let tokenBalance: number;
-  let mintAddress: string;
+  let tokenBalance: any;
+  let mintAddress: any;
   try {
     // @ts-ignore
-    async function getTokenAccounts(
-      wallet: string,
-      solanaConnection: Connection
-    ) {
+    async function getTokenAccounts(wallet: any, solanaConnection: Connection) {
       const filters: GetProgramAccountsFilter[] = [
         {
           dataSize: 165, //size of account (bytes)
