@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/storageModule/plugin.ts"],"names":[],"mappings":";;;AAEA,mDAAgD;AAEhD,qBAAqB;AACd,MAAM,aAAa,GAAG,GAAmB,EAAE,CAAC,CAAC;IAClD,OAAO,CAAC,QAAkB;QACxB,MAAM,aAAa,GAAG,IAAI,6BAAa,EAAE,CAAC;QAC1C,QAAQ,CAAC,OAAO,GAAG,GAAG,EAAE,CAAC,aAAa,CAAC;IACzC,CAAC;CACF,CAAC,CAAC;AALU,QAAA,aAAa,iBAKvB"}

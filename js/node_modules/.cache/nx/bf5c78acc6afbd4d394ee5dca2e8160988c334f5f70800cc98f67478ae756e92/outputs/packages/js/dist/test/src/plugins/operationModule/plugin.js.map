@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/operationModule/plugin.ts"],"names":[],"mappings":";;;AAEA,uDAAoD;AAEpD,qBAAqB;AACd,MAAM,eAAe,GAAG,GAAmB,EAAE,CAAC,CAAC;IACpD,OAAO,CAAC,QAAkB;QACxB,MAAM,eAAe,GAAG,IAAI,iCAAe,CAAC,QAAQ,CAAC,CAAC;QACtD,QAAQ,CAAC,UAAU,GAAG,GAAG,EAAE,CAAC,eAAe,CAAC;IAC9C,CAAC;CACF,CAAC,CAAC;AALU,QAAA,eAAe,mBAKzB"}

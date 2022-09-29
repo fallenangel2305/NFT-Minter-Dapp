@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/rpcModule/plugin.ts"],"names":[],"mappings":";;;AAEA,2CAAwC;AAExC,qBAAqB;AACd,MAAM,SAAS,GAAG,GAAmB,EAAE,CAAC,CAAC;IAC9C,OAAO,CAAC,QAAkB;QACxB,MAAM,SAAS,GAAG,IAAI,qBAAS,CAAC,QAAQ,CAAC,CAAC;QAC1C,QAAQ,CAAC,GAAG,GAAG,GAAG,EAAE,CAAC,SAAS,CAAC;IACjC,CAAC;CACF,CAAC,CAAC;AALU,QAAA,SAAS,aAKnB"}

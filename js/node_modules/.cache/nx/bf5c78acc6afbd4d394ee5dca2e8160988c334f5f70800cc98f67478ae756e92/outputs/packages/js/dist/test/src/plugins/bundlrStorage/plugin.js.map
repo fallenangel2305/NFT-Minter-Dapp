@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/bundlrStorage/plugin.ts"],"names":[],"mappings":";;;AAEA,+DAA2E;AAEpE,MAAM,aAAa,GAAG,CAAC,UAAyB,EAAE,EAAkB,EAAE,CAAC,CAAC;IAC7E,OAAO,CAAC,QAAkB;QACxB,QAAQ,CAAC,OAAO,EAAE,CAAC,SAAS,CAAC,IAAI,yCAAmB,CAAC,QAAQ,EAAE,OAAO,CAAC,CAAC,CAAC;IAC3E,CAAC;CACF,CAAC,CAAC;AAJU,QAAA,aAAa,iBAIvB"}

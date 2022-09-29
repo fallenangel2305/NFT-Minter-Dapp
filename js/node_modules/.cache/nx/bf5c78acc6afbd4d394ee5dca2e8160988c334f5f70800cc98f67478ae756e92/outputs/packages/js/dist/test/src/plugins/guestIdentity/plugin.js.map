@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/guestIdentity/plugin.ts"],"names":[],"mappings":";;;AAGA,+DAA4D;AAE5D,qBAAqB;AACd,MAAM,aAAa,GAAG,CAAC,SAAqB,EAAkB,EAAE,CAAC,CAAC;IACvE,OAAO,CAAC,QAAkB;QACxB,QAAQ,CAAC,QAAQ,EAAE,CAAC,SAAS,CAAC,IAAI,yCAAmB,CAAC,SAAS,CAAC,CAAC,CAAC;IACpE,CAAC;CACF,CAAC,CAAC;AAJU,QAAA,aAAa,iBAIvB"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/mockStorage/plugin.ts"],"names":[],"mappings":";;;AAEA,2DAA4E;AAErE,MAAM,WAAW,GAAG,CAAC,OAA4B,EAAkB,EAAE,CAAC,CAAC;IAC5E,OAAO,CAAC,QAAkB;QACxB,QAAQ,CAAC,OAAO,EAAE,CAAC,SAAS,CAAC,IAAI,qCAAiB,CAAC,OAAO,CAAC,CAAC,CAAC;IAC/D,CAAC;CACF,CAAC,CAAC;AAJU,QAAA,WAAW,eAIrB"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/keypairIdentity/plugin.ts"],"names":[],"mappings":";;;AAGA,mEAAgE;AAEzD,MAAM,eAAe,GAAG,CAAC,OAAgB,EAAkB,EAAE,CAAC,CAAC;IACpE,OAAO,CAAC,QAAkB;QACxB,QAAQ,CAAC,QAAQ,EAAE,CAAC,SAAS,CAAC,IAAI,6CAAqB,CAAC,OAAO,CAAC,CAAC,CAAC;IACpE,CAAC;CACF,CAAC,CAAC;AAJU,QAAA,eAAe,mBAIzB"}

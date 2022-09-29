@@ -1,0 +1,1 @@
+{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../../../../../src/plugins/walletAdapterIdentity/plugin.ts"],"names":[],"mappings":";;;AAEA,+EAGuC;AAEhC,MAAM,qBAAqB,GAAG,CACnC,aAA4B,EACZ,EAAE,CAAC,CAAC;IACpB,OAAO,CAAC,QAAkB;QACxB,QAAQ;aACL,QAAQ,EAAE;aACV,SAAS,CAAC,IAAI,yDAA2B,CAAC,aAAa,CAAC,CAAC,CAAC;IAC/D,CAAC;CACF,CAAC,CAAC;AARU,QAAA,qBAAqB,yBAQ/B"}
