@@ -697,7 +697,7 @@ const Home: NextPage = () => {
 
     const authority = auctionHouse.authorityAddress;
     const buyer = "2eVAYwxrfZiPBQYVpjUKSgXPCLWEaACqaeo6j7ijK48G";
-    const amount = sol(0.001);
+    const amount = sol(1);
     const buyerEscrow = findAuctionHouseBuyerEscrowPda(
       auctionHouse.address,
       /*@ts-ignore*/
