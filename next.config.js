@@ -13,7 +13,14 @@ const nextConfig = {
   env: {
     TOKEN_ACCOUNT_TO_SEARCH: process.env.TOKEN_ACCOUNT_TO_SEARCH,
     NFT_STORAGE_API: process.env.NFT_STORAGE_API,
-  }
+  },
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: true,
+  },
 }
 
 module.exports = nextConfig
