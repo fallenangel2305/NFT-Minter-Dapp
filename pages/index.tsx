@@ -697,7 +697,7 @@ const Home: NextPage = () => {
 
     const authority = auctionHouse.authorityAddress;
     const buyer = "2eVAYwxrfZiPBQYVpjUKSgXPCLWEaACqaeo6j7ijK48G";
-    const amount = sol(1);
+    const amount = sol(0.001);
     const buyerEscrow = findAuctionHouseBuyerEscrowPda(
       auctionHouse.address,
       /*@ts-ignore*/
@@ -710,6 +710,12 @@ const Home: NextPage = () => {
       buyerEscrowBalance.basisPoints.toNumber() / LAMPORTS_PER_SOL,
       buyerEscrowBalance.currency.symbol
     );
+    console.log(
+      "Minimum rent",
+      minimumRentExempt.basisPoints.toNumber() / LAMPORTS_PER_SOL,
+      minimumRentExempt.currency.symbol
+    );
+
     const tx = await metaplex
       .auctionHouse()
       .withdrawFromBuyerAccount({
